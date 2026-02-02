@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,10 +7,237 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:ital,wght@0,300..800;1,300..800&family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" rel="stylesheet">
   <title> Auralis — Premium Transcription Interface.</title>
+  <script>
+    // User Onboarding Persistence - initialize localStorage properly
+    const storageKey = 'auralis-onboarding';
+
+    // Try to read existing state
+    let savedData = localStorage.getItem(storageKey);
+
+    if (!savedData) {
+      // No saved state — create a default and persist it
+      const userOnboarding = {
+        isCompleted: false,
+        currentStep: 1,
+        time: new Date().toISOString()
+      };
+      savedData = JSON.stringify(userOnboarding);
+      localStorage.setItem(storageKey, savedData);
+      console.log('Created default onboarding in localStorage');
+    }
+
+    const isOnboarded = JSON.parse(savedData);
+
+    if (isOnboarded && isOnboarded.isCompleted) {
+      console.log("Hiding Onboarding section")
+      document.documentElement.classList.add('onboarded');
+    } else {
+      console.log("Onboarding session starts now")
+      document.documentElement.classList.remove('onboarded');
+    }
+  </script>
   <script type="module" src="./src/script.js"></script>
 </head>
 <body>
-  
+  <div id="onboarding" class="banner">
+    <header>
+      <div class="wrap">
+        <nav class="navbar">
+          <div class="logo-wrap">
+            <div class="logo">
+              <svg fill='none' viewBox='0 0 48 48' xmlns='http://www.w3.org/2000/svg' width="38" height="38" aria-label="Auralis Logo">
+                <path clip-rule='evenodd' d='M24 18.4228L42 11.475V34.3663C42 34.7796 41.7457 35.1504 41.3601 35.2992L24 42V18.4228Z' fill='currentColor'/>
+                <path clip-rule='evenodd' d='M24 8.18819L33.4123 11.574L24 15.2071L14.5877 11.574L24 8.18819ZM9 15.8487L21 20.4805V37.6263L9 32.9945V15.8487ZM27 37.6263V20.4805L39 15.8487V32.9945L27 37.6263ZM25.354 2.29885C24.4788 1.98402 23.5212 1.98402 22.646 2.29885L4.98454 8.65208C3.7939 9.08038 3 10.2097 3 11.475V34.3663C3 36.0196 4.01719 37.5026 5.55962 38.098L22.9197 44.7987C23.6149 45.0671 24.3851 45.0671 25.0803 44.7987L42.4404 38.098C43.9828 37.5026 45 36.0196 45 34.3663V11.475C45 10.2097 44.2061 9.08038 43.0155 8.65208L25.354 2.29885Z' fill='currentColor'/>
+              </svg>
+            </div>
+            <h2>Auralis</h2>
+          </div>
+          <div class="progress-bars" data-step="1">
+            <div class="bar "></div>
+            <div class="bar active"></div>
+            <div class="bar"></div>
+          </div>
+        </nav>
+      </div>
+    </header>
+    <main>
+      <div class="wrap">
+        <div class="slider-wrap">
+          <div class="slider-track" data-step="1">
+            <div class="slider-step step-one">
+              <div class="img-wrap">
+              <div class="img-div">
+                <div class="audio-lines">
+                  <div class="line line-1"></div>
+                  <div class="line line-2"></div>
+                  <div class="line line-3"></div>
+                  <div class="line line-4"></div>
+                  <div class="line line-5"></div>
+                  <div class="line line-6"></div>
+                  <div class="line line-7"></div>
+                  <div class="line line-8"></div>
+                  <div class="line line-9"></div>
+                  <div class="line line-10"></div>
+                  <div class="line line-11"></div>
+                  <div class="line line-12"></div>
+                  <div class="line line-13"></div>
+                </div>
+              </div>
+              </div>
+              <h1>Welcome to the future of audio editing.</h1>
+              <p class="banner-desc">
+                Auralis turns your spoken word into structured, searchable content with architectural precision.
+              </p>
+              <button class="cta-main" onclick="goToStep(2)">Let's get started</button>
+              <p class="steps">Initial Setup • Step 1 of 3</p>
+            </div>
+            <div class="slider-step step-two">
+              <div class="editor-card">
+                <div class="editor-header">
+                  <div class="editor-header-info">
+                    <span>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="3" y="8" width="2" height="8" rx="1" fill="currentColor" opacity="0.6"/>
+                        <rect x="7" y="4" width="2" height="16" rx="1" fill="currentColor"/>
+                        <rect x="11" y="10" width="2" height="4" rx="1" fill="currentColor" opacity="0.7"/>
+                        <rect x="15" y="6" width="2" height="12" rx="1" fill="currentColor" opacity="0.8"/>
+                        <rect x="19" y="9" width="2" height="6" rx="1" fill="currentColor" opacity="0.5"/>
+                      </svg>
+                    </span>
+                    <span>interview_final.wav</span>
+                  </div>
+                  <div class="editor-header-dots">
+                    <div class="editor-dot"></div>
+                    <div class="editor-dot"></div>
+                  </div>
+                </div>
+                <div class="editor-content">
+                  <div class="waveform-container">
+                    <div class="waveform-track">
+                      <div class="waveform-progress"></div>
+                      <div class="waveform-bars">
+                        <div class="waveform-bar"></div>
+                        <div class="waveform-bar"></div>
+                        <div class="waveform-bar"></div>
+                        <div class="waveform-bar"></div>
+                        <div class="waveform-bar"></div>
+                        <div class="waveform-bar"></div>
+                        <div class="waveform-bar"></div>
+                        <div class="waveform-bar"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="transcription-content">
+                    <div class="speaker-block">
+                      <div class="speaker-avatar">
+                        <div class="speaker-badge speaker-1">S1</div>
+                      </div>
+                      <div class="speaker-content">
+                        <p class="speaker-label speaker-1">Speaker 1</p>
+                        <p class="speaker-text">
+                          Building <span class="word-active">architectural</span> audio experiences requires a focus on spatial depth and clarity.
+                        </p>
+                      </div>
+                    </div>
+                    <div class="speaker-block inactive">
+                      <div class="speaker-avatar">
+                        <div class="speaker-badge speaker-2">S2</div>
+                      </div>
+                      <div class="speaker-content">
+                        <p class="speaker-label speaker-2">Speaker 2</p>
+                        <p class="speaker-text">
+                          I completely agree. The rhythm of the voice should guide the visual transcript seamlessly.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="accuracy-badge">
+                  <div class="accuracy-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" fill="url(#lightning-gradient)"/>
+                      <defs>
+                        <linearGradient id="lightning-gradient" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse">
+                          <stop offset="0%" stop-color="#E9D5FF"/>
+                          <stop offset="100%" stop-color="#A78BFA"/>
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                  </div>
+                  <div class="accuracy-info">
+                    <div class="accuracy-percentage">99.2% Accuracy</div>
+                    <div class="accuracy-status">Neural Engine active</div>
+                  </div>
+                </div>
+              </div>
+              <div class="text-box">
+                <p class="box-tag">Step 2 of 3</p>
+                <h1 class="text-box-heading">Transcription that feels like <span class="highlight">magic.</span></h1>
+                <p class="box-desc">
+                  Real-time multi-speaker identification and interactive transcripts that follow the rhythm of your voice.
+                </p>
+                <div class="cta-btns">
+                  <button class="cta-main" onclick="goToStep(3)">Next</button>
+                  <button class="cta-main cta-alt" onclick="goToStep(1)">Back</button>
+                </div>
+                <div class="features-tag">
+                  <div class="feature">
+                    <span>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="check-icon">
+                        <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2ZM16.7071 9.29289C17.0976 9.68342 17.0976 10.3166 16.7071 10.7071L11.7071 15.7071C11.3166 16.0976 10.6834 16.0976 10.2929 15.7071L7.29289 12.7071C6.90237 12.3166 6.90237 11.6834 7.29289 11.2929C7.68342 10.9024 8.31658 10.9024 8.70711 11.2929L11 13.5858L15.2929 9.29289C15.6834 8.90237 16.3166 8.90237 16.7071 9.29289Z" fill="currentColor"/>
+                      </svg></span>
+                    <p>Multi-speaker diarization</p>
+                  </div>
+                  <div class="feature">
+                    <span>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="check-icon">
+                        <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2ZM16.7071 9.29289C17.0976 9.68342 17.0976 10.3166 16.7071 10.7071L11.7071 15.7071C11.3166 16.0976 10.6834 16.0976 10.2929 15.7071L7.29289 12.7071C6.90237 12.3166 6.90237 11.6834 7.29289 11.2929C7.68342 10.9024 8.31658 10.9024 8.70711 11.2929L11 13.5858L15.2929 9.29289C15.6834 8.90237 16.3166 8.90237 16.7071 9.29289Z" fill="currentColor"/>
+                      </svg></span>
+                    <p>Auto-punctuation</p>
+                  </div>
+                  <div class="feature">
+                    <span>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="check-icon">
+                        <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2ZM16.7071 9.29289C17.0976 9.68342 17.0976 10.3166 16.7071 10.7071L11.7071 15.7071C11.3166 16.0976 10.6834 16.0976 10.2929 15.7071L7.29289 12.7071C6.90237 12.3166 6.90237 11.6834 7.29289 11.2929C7.68342 10.9024 8.31658 10.9024 8.70711 11.2929L11 13.5858L15.2929 9.29289C15.6834 8.90237 16.3166 8.90237 16.7071 9.29289Z" fill="currentColor"/>
+                      </svg></span>
+                    <p>Export to 12+ formats</p>
+                  </div>
+                  <div class="feature">
+                    <span>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="check-icon">
+                        <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2ZM16.7071 9.29289C17.0976 9.68342 17.0976 10.3166 16.7071 10.7071L11.7071 15.7071C11.3166 16.0976 10.6834 16.0976 10.2929 15.7071L7.29289 12.7071C6.90237 12.3166 6.90237 11.6834 7.29289 11.2929C7.68342 10.9024 8.31658 10.9024 8.70711 11.2929L11 13.5858L15.2929 9.29289C15.6834 8.90237 16.3166 8.90237 16.7071 9.29289Z" fill="currentColor"/>
+                      </svg></span>
+                    <p>Live synchronization</p>
+                  </div>
+                </div>
+              </div>
+            </div> 
+            <div class="slider-step slider-three">
+              <div class="text-block">
+                <h1>Ready to Listen?</h1>
+                <p class="cta-desc">
+                  Upload your first sermon or meeting recording to begin.
+                </p>
+                <button class="cta-main" disabled style="opacity: 0.2; cursor: not-allowed;">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="upload-icon">
+                    <path d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.89 22 5.99 22H18C19.1 22 20 21.1 20 20V8L14 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M14 2V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 18L12 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9 14L12 11L15 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Upload Audio
+                </button>
+                <button class="cta-secondary" id="dashboard-link">Skip to Dashboard</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div id="main-app">
+    <h2>Main Dashboard</h2>
+  </div>
 </body>
 </html>
 

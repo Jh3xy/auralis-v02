@@ -1,0 +1,164 @@
+/* ============================================
+   COMPREHENSIVE CSS RESET & BASE STYLES
+   ============================================ */
+
+/* 1. Box Sizing Reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* 2. Remove Default Margins & Padding */
+* {
+  margin: 0;
+  padding: 0;
+  /* Firefox Support */
+  /* scrollbar-width: thin;
+  scrollbar-color: var(--color-highlight) var(--bg-surface); */
+}
+html{
+  font-size: 16px;
+}
+/* 3. Body Defaults */
+body {
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 4. Media Elements */
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* 5. Form Elements */
+input,
+button,
+textarea,
+select {
+  font: inherit;
+}
+
+/* 6. Typography Reset */
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: break-word;
+}
+
+/* 7. Root Stacking Context */
+#root,
+#__next {
+  isolation: isolate;
+}
+
+/* 8. Remove List Styles */
+ul,
+ol {
+  list-style: none;
+}
+
+/* 9. Link Styles */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* 10. Button Reset */
+button {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* 11. Table Reset */
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+/* 12. Remove Default Fieldset/Legend Styles */
+fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+legend {
+  padding: 0;
+}
+
+/* Minimal scrollbar */
+::-webkit-scrollbar {
+  width: 3px;
+  height: 3px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(233, 213, 255, 0.3); /* Semi-transparent lavender */
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(233, 213, 255, 0.5);
+}
+
+/* ============================================
+   OPTIONAL ACCESSIBILITY ENHANCEMENTS
+   (Uncomment if needed for your project)
+   ============================================ */
+
+/* Focus Visible Styles - Better keyboard navigation */
+/*
+:focus-visible {
+  outline: 2px solid var(--color-highlight, #E9D5FF);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+*/
+
+/* Reduce Motion for Users with Accessibility Needs */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Screen Reader Only Class */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

@@ -1,0 +1,21 @@
+
+@media (min-width: 764px) {
+
+
+
+  /* Onboarding Media Queries */
+  .step-two{
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+  }
+  .editor-card {
+    align-self: start;
+  }
+  .text-box {
+    align-self: center; 
+  }
+  .features-tag{
+    max-width: 400px;
+    margin-top: 5rem;
+  }
+}

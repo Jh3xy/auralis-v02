@@ -1,44 +1,144 @@
-
 :root {
-    /* -----Fonts ------------ */
-    --ff-primary: 'Google Sans',  system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    --ff-secondary: 'Google Sans Code', 'Courier New', Courier, monospace;
+  /* ============================================
+     TYPOGRAPHY
+  ============================================ */
+  
+  /* Font Families */
+  --ff-primary: 'Google Sans Flex', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  --ff-secondary: 'Google Sans Code', 'Courier New', Courier, monospace;
 
-    /* --- SEMANTIC COLORS --- */
-    --bg-app: #0B0C10;
-    --bg-surface: #16181D;
-    --bg-sidebar: #000000;
-    
-    /* ---------Texts---------- */
-    --text-main: rgba(255, 255, 255, 0.9);
-    --text-muted: rgba(255, 255, 255, 0.6);
-    --text-inverse: #0B0C10; /* For dark text on light buttons */
+  /* Font Weights */
+  --fw-light: 300;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --fw-extrabold: 800;
 
+  /* Semantic Font Weights */
+  --fw-body: 400;
+  --fw-heading: 600;
+  --fw-emphasis: 700;
+  --fw-display: 800;
+
+  /* Responsive Font Sizes - Using clamp() for fluid scaling */
+  --fs-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);      /* 12px → 14px */
+  --fs-sm: clamp(0.875rem, 0.8rem + 0.375vw, 1rem);        /* 14px → 16px */
+  --fs-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);      /* 16px → 18px */
+  --fs-lg: clamp(1.125rem, 1rem + 0.625vw, 1.5rem);        /* 18px → 24px */
+  --fs-xl: clamp(1.25rem, 1rem + 1.25vw, 2rem);            /* 20px → 32px */
+  --fs-2xl: clamp(1.5rem, 1rem + 2.5vw, 3rem);             /* 24px → 48px */
+  --fs-3xl: clamp(2rem, 1.8rem + 2.5vw, 4rem);             /* 32px → 64px */
+
+  /* Line Heights */
+  --lh-tight: 1.25;
+  --lh-normal: 1.5;
+  --lh-relaxed: 1.75;
+
+  /* ============================================
+     COLORS
+  ============================================ */
+  
+  /* Background Colors */
+  --bg-app: #0B0C10;
+  --bg-surface: #16181D;
+  --bg-sidebar: #000000;
+
+  /* Text Colors */
+  --text-main: rgba(255, 255, 255, 0.9);
+  --text-muted: rgba(255, 255, 255, 0.6);
+  --text-inverse: #0B0C10;
+
+  /* Accent Colors */
+  --color-accent-1: #A7F3D0;    /* Mint */
+  --color-accent-2: #E0F2FE;    /* Sky Blue */
+  --color-highlight: #E9D5FF;   /* Lavender */
+
+  /* Borders & Effects */
   --border-subtle: rgba(255, 255, 255, 0.1);
   --glass-effect: rgba(11, 12, 16, 0.6);
+
+  /* ============================================
+     SPACING - Responsive with clamp()
+     ============================================ */
   
-  /* Accents */
-  --color-accent-1: #A7F3D0; /* Mint */
-  --color-accent-2: #E0F2FE; /* Sky Blue */
-  --color-highlight: #E9D5FF; /* Lavender */
+  --space-xs: clamp(0.25rem, 0.2rem + 0.25vw, 0.5rem);     /* 4px → 8px */
+  --space-sm: clamp(0.5rem, 0.4rem + 0.5vw, 1rem);         /* 8px → 16px */
+  --space-md: clamp(1rem, 0.8rem + 1vw, 2rem);             /* 16px → 32px */
+  --space-lg: clamp(1.5rem, 1rem + 2.5vw, 4rem);           /* 24px → 64px */
+  --space-xl: clamp(2rem, 1.5rem + 2.5vw, 5rem);           /* 32px → 80px */
 
+  /* ============================================
+     LAYOUT
+  ============================================ */
+  
+  --sidebar-width: 15rem;       /* 240px */
+  --padding-base: 2rem;         /* 32px */
+  --max-width-content: 72rem;   /* 1152px - max content width */
 
-  --radius-sm: 8px;
+  /* ============================================
+     BORDER RADIUS
+  ============================================ */
+  
+  --radius-xs: 0.25rem;         /* 4px - subtle rounding */
+  --radius-sm: 0.5rem;          /* 8px - buttons, inputs */
+  --radius-md: 0.75rem;         /* 12px - cards */
+  --radius-lg: 1rem;            /* 16px - modals */
+  --radius-full: 9999px;        /* Fully rounded (pills, avatars) */
 
-  /* Spacing (4pt Grid) */
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 16px;
-  --space-lg: 24px;
-  --space-xl: 32px;
-  --sidebar-width: 240px;
-  --padding-base: 32px;
+  /* ============================================
+     SHADOWS
+  ============================================ */
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 
-    /* Transitions */
+  /* ============================================
+     TRANSITIONS & ANIMATIONS
+  ============================================ */
+  
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
   --duration-fast: 150ms;
-  --transtion-base: all var(--duration-fast) var(--ease-standard);
+  --duration-normal: 250ms;
+  --duration-slow: 350ms;
+
+  --transition-base: all var(--duration-fast) var(--ease-standard);
+  --transition-colors: color var(--duration-fast) var(--ease-standard),
+                       background-color var(--duration-fast) var(--ease-standard),
+                       border-color var(--duration-fast) var(--ease-standard);
+
+  /* ============================================
+   Z-INDEX LAYERS
+  ============================================ */
+  
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-modal-backdrop: 1030;
+  --z-modal: 1040;
+  --z-tooltip: 1050;
+
+  /* ============================================
+   TRANSCRIPTION EDITOR STYLES
+  ============================================ */
+
+  /* Speaker Colors */
+  --color-indigo: #818CF8;
+  --color-indigo-light: rgb(165, 180, 252);
+  --color-indigo-bg: rgba(129, 140, 248, 0.2);
+  --color-indigo-border: rgba(129, 140, 248, 0.3);
+
+  --color-emerald: #34D399;
+  --color-emerald-light: rgb(110, 231, 183);
+  --color-emerald-bg: rgba(52, 211, 153, 0.2);
+  --color-emerald-border: rgba(52, 211, 153, 0.3);
+
+  /* Additional UI Colors */
+  --color-slate-light: rgb(203, 213, 225);
+  --color-slate-dark: rgba(30, 41, 59, 0.8);
 }
-
-
-
