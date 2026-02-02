@@ -1,10 +1,11 @@
 
+
+/* Tablets Upwards */
 @media (min-width: 764px) {
-
-
-
+  
+  
   /* Onboarding Media Queries */
-  .step-two{
+  .step-three{
     grid-template-columns: 1fr 1fr;
     align-items: center;
   }
@@ -19,3 +20,64 @@
     margin-top: 5rem;
   }
 }
+
+
+/* Mobile Phones */
+@media (max-width: 763px) {
+  
+  .app-grid{
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  .sidebar{
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 240px;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 1050;
+  }
+  body.open-nav .sidebar{
+    transform: translateX(0);
+  }
+  .sidebar-header{
+    display: block;
+  }
+  header .menu-btn{
+    display: block;
+    z-index: 10;
+  }
+  .nav-primary{
+    margin-top: 4rem;
+  }
+  main{
+    width: 100%;
+  }
+  /* Header controls responsive */
+  .header-controls {
+    gap: 0.5rem;
+  }
+  .icon-btn {
+    padding: 0.4rem;
+  }
+  #header-pfp {
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: 12px;
+  }
+  
+  /* Username input responsive */
+  .input-group {
+    max-width: 100%;
+    padding: 0 1rem;
+  }
+  .name-input {
+    font-size: var(--fs-sm);
+  }
+}
+
+
+
+

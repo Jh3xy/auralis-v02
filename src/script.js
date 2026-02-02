@@ -10,8 +10,13 @@ import './styles/queries.css'
 console.log('Vite is Running Script!');
 console.log('Auralis v02-0.00')
 
+// Import JS files here
+import { toggleClass, createInitials  } from './js/utils'
+
+window.createInitials = createInitials
 
 // Onboarding Setup with LocalStorage
+let username;
 
 const progressBar = document.querySelector('.progress-bars');
 const sliderTrack = document.querySelector('.slider-track');
@@ -61,10 +66,24 @@ if (savedState && !savedState.isCompleted) {
   goToStep(savedState.currentStep);
 }
 
+const stepTwoBtn = document.getElementById('step-two-btn')
+stepTwoBtn.addEventListener("click", ()=> {
+  const usernameInput = document.getElementById('user-name-input')
+  const username = usernameInput.value.trim()
+  const errMsg = document.querySelector('.err-msg')
+  if (username === '') {
+    console.log('Fill username first')
+    errMsg.style.display = 'block';
+  } else {
+    errMsg.style.display = 'none';
+    // Move to third step
+    goToStep(3)
+    // Create Initials
+    createInitials(username)
+  }
+})
+
 const dashboardBtn = document.getElementById('dashboard-link')
-console.log(dashboardBtn)
-
-
 dashboardBtn.addEventListener("click", ()=>{
   // Add transitioning class for smoother animation
   document.documentElement.classList.add('transitioning');
@@ -84,11 +103,104 @@ dashboardBtn.addEventListener("click", ()=>{
     setTimeout(() => {
       document.documentElement.classList.remove('transitioning');
     }, 500);
-  }, 200); // Small delay for smoothness
+  }, 400); // Small delay for smoothness
 })
 
 
 
+// Handle active class toggles
+
+// Nav links
+const navLinks = document.querySelectorAll('.nav-link')
+
+// Callback function to handle section switching
+function handleSectionSwitch(clickedElement) {
+  // Check if the clicked element has a data-id attribute
+  const targetId = clickedElement.dataset.id;
+  
+  if (targetId) {
+    // Get all sections
+    const sections = document.querySelectorAll('.section');
+
+    // TODO: Save current targetId to LocalStorage
+    localStorage.setItem('current-section', targetId)
+    const currentSection = localStorage.getItem('current-section')
+    console.log(currentSection)
+    // Find the matching section
+    let matchFound = false;
+    
+    sections.forEach((section) => {
+      if (section.id === targetId) {
+        matchFound = true;
+        // Remove show class from all sections
+        sections.forEach((sec) => sec.classList.remove('show'));
+        // Add show class to the matching section
+        section.classList.add('show');
+        console.log(`Switched to section: ${targetId}`);
+      }
+    });
+    
+    // Log if no matching section was found
+    if (!matchFound) {
+      console.warn(`No section found with id: ${targetId}`);
+    }
+  } else {
+    console.warn('Clicked nav link does not have a data-id attribute');
+    console.warn(`${targetId} nav link does not have a data-id attribute`);
+  }
+}
 
 
+// Current section persistence on page reload
+document.addEventListener("DOMContentLoaded", ()=> {
+  // on DOMContentLoaded check storage for current section
+  const currentSection = localStorage.getItem('current-section')
+  if (currentSection) {
+    console.log(`${currentSection} section found`)
+    
+    // loop through sections remove show class and add to matching section
+    const sections = document.querySelectorAll('.section');
+    sections.forEach((section)=> {
+      if (section.id === currentSection) {
+        // Remove show class from all sections
+        sections.forEach((sec) => sec.classList.remove('show'));
+        // Add show class to the matching section
+        section.classList.add('show');
+        console.log(`Switched to section: ${currentSection} after reload`);
+      }
+    })
+    
+    // Also update active class in navbar
+    const navlinks = document.querySelectorAll('.nav-link')
+    
+    // First, remove active from all nav links
+    navlinks.forEach((navLink) => {
+      navLink.classList.remove('active') 
+    })
+    
+    // Then add active to the matching one
+    navlinks.forEach((navLink) => {
+      if (navLink.dataset.id === currentSection) {
+        navLink.classList.add('active') 
+        console.log(`Activated nav link: ${currentSection}`)
+      }
+    })
+  } else {
+    console.warn('Could not find current section')
+  }
+})
+
+toggleClass(navLinks, 'active', handleSectionSwitch)
+
+
+// Restore username and initials on page load
+document.addEventListener('DOMContentLoaded', () => {
+  const storageKey = 'auralis-onboarding';
+  const onboarding = JSON.parse(localStorage.getItem(storageKey));
+  
+  if (onboarding && onboarding.username) {
+    createInitials(onboarding.username);
+    console.log('Username restored from localStorage');
+  }
+});
 

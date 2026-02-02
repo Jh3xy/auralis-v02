@@ -22,7 +22,7 @@
   --fw-display: 800;
 
   /* Responsive Font Sizes - Using clamp() for fluid scaling */
-  --fs-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);      /* 12px → 14px */
+  --fs-xs: clamp(0.75rem, 0.68rem + 0.25vw, 0.875rem);      /* 12px → 14px */
   --fs-sm: clamp(0.875rem, 0.8rem + 0.375vw, 1rem);        /* 14px → 16px */
   --fs-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);      /* 16px → 18px */
   --fs-lg: clamp(1.125rem, 1rem + 0.625vw, 1.5rem);        /* 18px → 24px */
@@ -47,12 +47,22 @@
   /* Text Colors */
   --text-main: rgba(255, 255, 255, 0.9);
   --text-muted: rgba(255, 255, 255, 0.6);
-  --text-inverse: #0B0C10;
+  --text-inverse: #0b0c10;
 
   /* Accent Colors */
   --color-accent-1: #A7F3D0;    /* Mint */
   --color-accent-2: #E0F2FE;    /* Sky Blue */
   --color-highlight: #E9D5FF;   /* Lavender */
+
+  /* Status Colors */
+  --color-success: #4ADE80;
+  --color-error: #F87171;
+  --color-warning: #FBBF24;
+
+  /* Status Colors: Background tints for alerts/toasts */
+  --color-success-bg: rgba(74, 222, 128, 0.1);
+  --color-error-bg: rgba(248, 113, 113, 0.1);
+  --color-warning-bg: rgba(251, 191, 36, 0.1);
 
   /* Borders & Effects */
   --border-subtle: rgba(255, 255, 255, 0.1);
@@ -84,6 +94,7 @@
   --radius-sm: 0.5rem;          /* 8px - buttons, inputs */
   --radius-md: 0.75rem;         /* 12px - cards */
   --radius-lg: 1rem;            /* 16px - modals */
+  --radius-circle: 50%;            /* Circles */
   --radius-full: 9999px;        /* Fully rounded (pills, avatars) */
 
   /* ============================================

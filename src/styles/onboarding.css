@@ -34,7 +34,7 @@ html.onboarded #main-app{
   transition: all var(--duration-normal) var(--ease-standard);
 }
 .wrap{
-  max-width: 1200px;
+  max-width: 1400px;
   width: 94%;
   margin: 0 auto;
 }
@@ -85,10 +85,17 @@ html.onboarded #main-app{
   background-color: var(--color-highlight);
   box-shadow: 0 0 #0000, 0 0 #0000, 0 0 20px rgba(234, 214, 255, 0.3);
 }
+.progress-bars[data-step="4"] .bar:nth-child(1),
+.progress-bars[data-step="4"] .bar:nth-child(2),
+.progress-bars[data-step="4"] .bar:nth-child(3),
+.progress-bars[data-step="4"] .bar:nth-child(4) {
+  background-color: var(--color-highlight);
+  box-shadow: 0 0 #0000, 0 0 #0000, 0 0 20px rgba(234, 214, 255, 0.3);
+}
 .banner-cta:hover{
   opacity: 1;
 }
-main {
+#onboarding main {
   padding-top: 2rem;
   text-align: center;
 }
@@ -240,11 +247,13 @@ main .steps{
   margin-top: 1rem;
   font-size: var(--fs-xs);
 }
-.step-two{
+.step-two,
+.step-three{
   display: grid;
   grid-template-columns: 1fr;
   gap: 3rem;
 }
+
 /* Main Editor Card */
 .editor-card {
   position: relative;
@@ -601,12 +610,20 @@ main .steps{
   transform: translateX(-200%);
 }
 
+.slider-track[data-step="4"] {
+  transform: translateX(-300%);
+}
+
 .slider-step::-webkit-scrollbar {
   display: none;
 }
 .slider-three{
   display: grid;
   place-items: center;
+}
+.text-block{
+  width: 90%;
+  margin: 2rem auto 0;
 }
 .text-block h1 {
   letter-spacing: -1px;
@@ -642,12 +659,75 @@ main .steps{
 .cta-secondary:hover{
   opacity: 1;
 }
+/* ============================================
+   USERNAME INPUT STYLES (Step 2)
+   ============================================ */
+
+.input-group {
+  max-width: 400px;
+  margin: 2.5rem auto 0;
+  text-align: left;
+}
+
+.input-group label {
+  display: block;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.name-input {
+  width: 100%;
+  background: linear-gradient(
+    to bottom,
+    rgba(11, 12, 16, 0.4) 0%,
+    rgba(11, 12, 16, 0.2) 100%
+  );
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.2rem;
+  font-size: var(--fs-base);
+  font-family: var(--ff-primary);
+  color: var(--text-main);
+  transition: all var(--duration-normal) var(--ease-standard);
+  outline: none;
+}
+
+.name-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.name-input:focus {
+  border-color: var(--color-highlight);
+  box-shadow: 0 0 0 3px rgba(233, 213, 255, 0.1),
+              0 0 20px rgba(233, 213, 255, 0.2);
+  background: linear-gradient(
+    to bottom,
+    rgba(11, 12, 16, 0.6) 0%,
+    rgba(11, 12, 16, 0.3) 100%
+  );
+}
+
+.name-input:hover:not(:focus) {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.err-msg{
+  font-size: var(--fs-xs);
+  margin: 4px auto;
+  color: var(--color-error);
+  display: none;
+}
 
 
 
 
 
-/* Add to onboarding.css */
 
 /* ============================================
    SUBTLE ANIMATIONS - FINISHING TOUCHES
@@ -704,7 +784,7 @@ html.onboarded #onboarding {
 }
 
 .slider-step > *:nth-child(1) { animation-delay: 0.1s; }
-.slider-step > *:nth-child(2) { animation-delay: 0.2s; }
+.slider-step > *:nth-child(2) { animation-delay: 0.6s; }
 .slider-step > *:nth-child(3) { animation-delay: 0.3s; }
 .slider-step > *:nth-child(4) { animation-delay: 0.4s; }
 
@@ -718,3 +798,5 @@ html.onboarded #onboarding {
     transform: translateY(0);
   }
 }
+
+
