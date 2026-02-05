@@ -153,3 +153,64 @@
   --color-slate-light: rgb(203, 213, 225);
   --color-slate-dark: rgba(30, 41, 59, 0.8);
 }
+
+/* ============================================
+   LIGHT MODE OVERRIDES
+   Usage: <body class="light">
+============================================ */
+
+body.light {
+  /* Background Colors */
+  --bg-app: #F9FAFB;       /* Very light grey (almost white) */
+  --bg-surface: #FFFFFF;   /* Pure white for cards/surfaces */
+  --bg-sidebar: #F3F4F6;   /* Light grey for sidebar separation */
+
+  /* Text Colors */
+  --text-main: #111827;    /* Very dark grey (easier on eyes than pure black) */
+  --text-muted: #6B7280;   /* Medium grey */
+  --text-inverse: #FFFFFF; /* White text (for buttons/dark areas) */
+
+  /* Accent Colors (Slightly darkened for visibility on white) */
+  --color-accent-1: #34D399;    /* Richer Mint */
+  --color-accent-2: #38BDF8;    /* Richer Sky Blue */
+  --color-highlight: #A78BFA;   /* Richer Lavender */
+
+  /* Status Colors (These usually work well on both, but defined for consistency) */
+  --color-success: #16A34A;     /* Slightly darker green for text readability */
+  --color-error: #DC2626;       /* Slightly darker red */
+  --color-warning: #D97706;     /* Darker amber */
+
+  /* Status Backgrounds (Kept transparent, but using the darker base colors) */
+  --color-success-bg: rgba(22, 163, 74, 0.1);
+  --color-error-bg: rgba(220, 38, 38, 0.1);
+  --color-warning-bg: rgba(217, 119, 6, 0.1);
+
+  /* Borders & Effects */
+  --border-subtle: rgba(0, 0, 0, 0.1);  /* Black with low opacity */
+  --glass-effect: rgba(255, 255, 255, 0.8);
+
+  /* Transcription Speaker Colors (Adjusted for light mode contrast) */
+  --color-indigo: #4F46E5;
+  --color-indigo-light: #818CF8;
+  --color-indigo-bg: rgba(79, 70, 229, 0.1);
+  --color-indigo-border: rgba(79, 70, 229, 0.2);
+
+  --color-emerald: #059669;
+  --color-emerald-light: #34D399;
+  --color-emerald-bg: rgba(5, 150, 105, 0.1);
+  --color-emerald-border: rgba(5, 150, 105, 0.2);
+
+  /* Additional UI Colors */
+  --color-slate-light: #E2E8F0;
+  --color-slate-dark: #1E293B;
+  
+  /* Shadows (Darker/sharper for light mode) */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+}
+
+
+
+

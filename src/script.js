@@ -204,3 +204,56 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+
+
+// Initialize theme toggle
+// const toggleBtn = document.querySelector('.toggle-btn')
+// toggleBtn.addEventListener("click", ()=> {
+//   toggleClass(toggleBtn, 'on')
+//   toggleClass(document.body, 'light')
+// })
+
+
+
+// Grab file upload input for API use
+const audioInput = document.getElementById('audio-input')
+audioInput.addEventListener("change", ()=> {
+  const audio = audioInput.files[0];
+  // Check if an actual audio file was selected
+  if (!audio) {
+    console.log('No audio Uploaded')
+    return
+  }
+
+  // Convert audio size from Bytes to MB and check if larger than 500MB as per Assembly AI's specs
+  const sizeInMB = audio.size / (1024 * 1024)
+  if (sizeInMB >= 500) {
+    console.log('Cannot upload file greater than 500MB')
+    return
+  }
+  console.log(`${audio.name} has been uploaded`);
+  console.log(`Audio type is ${audio.type}`);
+  console.log(`Audio size is ${sizeInMB.toFixed(2)}`);
+})
+
+
+
+
+// Empty State - Navigate to Transcription section when footer is clicked
+const emptyFooter = document.querySelector('.empty-footer');
+
+if (emptyFooter) {
+  emptyFooter.addEventListener('click', () => {
+    // Find the Transcription nav link
+    const transcriptionNavLink = document.querySelector('[data-id="transcription"]');
+    
+    if (transcriptionNavLink) {
+      // Trigger a click on the Transcription nav link
+      transcriptionNavLink.click();
+      
+      console.log('Navigated to Transcription section from empty state');
+    }
+  });
+}
+
+

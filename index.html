@@ -9,10 +9,10 @@
   <meta name="theme-color" media="(prefers-color-scheme: light)" content="#E9D5FF">
   <!-- Apple-specific (iOS Safari) -->
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <!-- Dark Mode Favicon -->
-  <link rel="icon" type="image/svg+xml" media="(prefers-color-scheme: dark)"  href="data:image/svg+xml,<svg fill='none' viewBox='0 0 48 48' xmlns='http://www.w3.org/2000/svg'><path clip-rule='evenodd' d='M24 18.4228L42 11.475V34.3663C42 34.7796 41.7457 35.1504 41.3601 35.2992L24 42V18.4228Z' fill='%23E0D7FF'/><path clip-rule='evenodd' d='M24 8.18819L33.4123 11.574L24 15.2071L14.5877 11.574L24 8.18819ZM9 15.8487L21 20.4805V37.6263L9 32.9945V15.8487ZM27 37.6263V20.4805L39 15.8487V32.9945L27 37.6263ZM25.354 2.29885C24.4788 1.98402 23.5212 1.98402 22.646 2.29885L4.98454 8.65208C3.7939 9.08038 3 10.2097 3 11.475V34.3663C3 36.0196 4.01719 37.5026 5.55962 38.098L22.9197 44.7987C23.6149 45.0671 24.3851 45.0671 25.0803 44.7987L42.4404 38.098C43.9828 37.5026 45 36.0196 45 34.3663V11.475C45 10.2097 44.2061 9.08038 43.0155 8.65208L25.354 2.29885Z' fill='%23E0D7FF'/></svg>">
-  <!-- Light Mode Favicon (darker purple) -->
-  <link rel="icon" type="image/svg+xml" media="(prefers-color-scheme: light)" href="data:image/svg+xml,<svg fill='none' viewBox='0 0 48 48' xmlns='http://www.w3.org/2000/svg'><path clip-rule='evenodd' d='M24 18.4228L42 11.475V34.3663C42 34.7796 41.7457 35.1504 41.3601 35.2992L24 42V18.4228Z' fill='%236B21A8'/><path clip-rule='evenodd' d='M24 8.18819L33.4123 11.574L24 15.2071L14.5877 11.574L24 8.18819ZM9 15.8487L21 20.4805V37.6263L9 32.9945V15.8487ZM27 37.6263V20.4805L39 15.8487V32.9945L27 37.6263ZM25.354 2.29885C24.4788 1.98402 23.5212 1.98402 22.646 2.29885L4.98454 8.65208C3.7939 9.08038 3 10.2097 3 11.475V34.3663C3 36.0196 4.01719 37.5026 5.55962 38.098L22.9197 44.7987C23.6149 45.0671 24.3851 45.0671 25.0803 44.7987L42.4404 38.098C43.9828 37.5026 45 36.0196 45 34.3663V11.475C45 10.2097 44.2061 9.08038 43.0155 8.65208L25.354 2.29885Z' fill='%236B21A8'/></svg>">
+  <!-- Dark Mode Favicon (light purple star) -->
+  <link rel="icon" type="image/svg+xml" media="(prefers-color-scheme: dark)" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23E0D7FF'><path d='M10 0L12.5 7.5L20 10L12.5 12.5L10 20L7.5 12.5L0 10L7.5 7.5L10 0Z'/></svg>">
+  <!-- Light Mode Favicon (darker purple star) -->
+  <link rel="icon" type="image/svg+xml" media="(prefers-color-scheme: light)" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%236B21A8'><path d='M10 0L12.5 7.5L20 10L12.5 12.5L10 20L7.5 12.5L0 10L7.5 7.5L10 0Z'/></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:ital,wght@0,300..800;1,300..800&family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" rel="stylesheet">
@@ -274,22 +274,24 @@
       <header class="full-width">
         <div class="wrap flex-between">
           <div class="app-logo flex items-center gap-1">
-            <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" width="24" height="24" aria-label="Auralis Logo" class="app-logo-mini">
-              <path clip-rule="evenodd" d="M24 18.4228L42 11.475V34.3663C42 34.7796 41.7457 35.1504 41.3601 35.2992L24 42V18.4228Z" fill="currentColor"></path>
-              <path clip-rule="evenodd" d="M24 8.18819L33.4123 11.574L24 15.2071L14.5877 11.574L24 8.18819ZM9 15.8487L21 20.4805V37.6263L9 32.9945V15.8487ZM27 37.6263V20.4805L39 15.8487V32.9945L27 37.6263ZM25.354 2.29885C24.4788 1.98402 23.5212 1.98402 22.646 2.29885L4.98454 8.65208C3.7939 9.08038 3 10.2097 3 11.475V34.3663C3 36.0196 4.01719 37.5026 5.55962 38.098L22.9197 44.7987C23.6149 45.0671 24.3851 45.0671 25.0803 44.7987L42.4404 38.098C43.9828 37.5026 45 36.0196 45 34.3663V11.475C45 10.2097 44.2061 9.08038 43.0155 8.65208L25.354 2.29885Z" fill="currentColor"></path>
+            <svg class="app-logo-mini logo-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10 0L12.5 7.5L20 10L12.5 12.5L10 20L7.5 12.5L0 10L7.5 7.5L10 0Z"/>
             </svg>
             <h1>Auralis</h1>
           </div>
           <div class="header-controls">
-            <div class="toggle-btn">
+            <!-- <div class="toggle-btn">
               <div class="icon flex-center">
                 <i data-lucide="moon"></i> 
                 <i data-lucide="sun"></i> 
               </div>
-            </div>
+            </div> -->
             <button id="menu" class="menu-btn">
               <i data-lucide="panel-right"></i>
             </button>
+            <div class="settings-dropdown">
+              <!-- <div id="header-pfp flex-center"></div> -->
+            </div>
           </div>
         </div>
       </header>
@@ -319,7 +321,8 @@
                 Recordings
               </a>
             </li>
-            <li class="nav-link" data-id="templates">
+
+            <li class="nav-link hidden" data-id="templates">
               <a href="#" class="link flex gap-3 items-center">
                 <i data-lucide="blocks"></i>
                 Templates
@@ -360,7 +363,7 @@
         </div>
       </aside>
       <main>
-        <section id="transcription" class="section flex-center transcription show">
+        <section id="transcription" class="section flex-center flex-col transcription show">
           <div class="loading-dock flex-center flex-col">
             <i data-lucide="file-music" class="upload-icon"></i>
             <h2>Ready to Listen?</h2>
@@ -381,18 +384,249 @@
               </div>
             </div>
           </div>
+          <div class="footer-secondary flex gap-5">
+            <div class="flex gap-2 footer items-center">
+              <i data-lucide="link-2"></i>
+              <span>Paste URL</span>
+            </div>
+            <div class="flex gap-2 footer">
+              <i data-lucide="history"></i>
+              <span>View Recent</span>
+            </div>
+          </div>
         </section>
         <section id="projects" class="section flex-center projects">
-          <h1>Projects Section</h1>
+          <div class="empty-state flex flex-col items-center">
+            <i data-lucide="file-search-corner"></i>
+            <h2>No Projects Yet</h2>
+            <p class="empty-desc">
+              Upload an audio file in the <span class="highlight-text">Transcription</span> section to get started with your first project.
+            </p>
+            <div class="flex gap-2 empty-footer">
+              <i data-lucide="arrow-left"></i>
+              <span>Go to Transcription</span>
+            </div>
+          </div>
         </section>
-        <section id="recordings" class="section flex-center recordings">
-          <h1>Recodring Section</h1>
+        <section id="recordings" class="section recordings">
+          <div class="wrap">
+            <div class="search-bar flex-between">
+              <div class="search-box flex items-start">
+                <label for="search">
+                  <i data-lucide="search"></i>
+                </label>
+                <input type="text" name="search" id="search" placeholder="Search transcriptions, dates or keywords..." autocomplete="off">
+              </div>
+              <button class="upload-btn flex items-center">
+                <i data-lucide="plus"></i>
+                New Upload
+              </button>
+            </div>
+            <div class="grid-table">
+              <h2>Past Transcriptions</h2>
+              <div class="grid-table-header grid">
+                <div class="title col-span-6">Audio Title</div>
+                <div class="status col-span-2">Status</div>
+                <div class="date col-span-2">Date</div>
+                <div class="duration col-span-2 place-end">Duration</div>
+              </div>
+              <div class="grid-table-content grid">
+                <div class="title col-span-6 flex flex-col">
+                  <span class="audio-title">The Architecture of Silence</span>
+                  <span class="audio-title-desc">Main Sanctuary • 2 Speakers</span>
+                </div>
+                <div class="status col-span-2">
+                  <span class="flex items-center gap-1">
+                    <span class="status-dot completed"></span>
+                    Completed
+                  </span>
+                </div>
+                <div class="date col-span-2">Oct 24, 2023</div>
+                <div class="duration col-span-2 place-end">42:15</div>
+              </div>
+              <div class="grid-table-content grid">
+                <div class="title col-span-6 flex flex-col">
+                  <span class="audio-title">Acoustic Engineering in Modern Atriums</span>
+                  <span class="audio-title-desc">North Wing • 1 Speaker</span>
+                </div>
+                <div class="status col-span-2">
+                  <span class="flex items-center gap-1">
+                    <span class="status-dot draft"></span>
+                    Draft
+                  </span>
+                </div>
+                <div class="date col-span-2">Oct 22, 2023</div>
+                <div class="duration col-span-2 place-end">28:40</div>
+              </div>
+              <div class="grid-table-content grid">
+                <div class="title col-span-6 flex flex-col">
+                  <span class="audio-title">Spatial Soundscape Design Pattern</span>
+                  <span class="audio-title-desc">Recording Studio • 3 Speakers</span>
+                </div>
+                <div class="status col-span-2">
+                  <span class="flex items-center gap-1">
+                    <span class="status-dot completed"></span>
+                    Completed
+                  </span>
+                </div>
+                <div class="date col-span-2">Oct 20, 2023</div>
+                <div class="duration col-span-2 place-end">56:12</div>
+              </div>
+              <div class="grid-table-content grid">
+                <div class="title col-span-6 flex flex-col">
+                  <span class="audio-title">Timber Slats and Reverb Control</span>
+                  <span class="audio-title-desc">Conference Hall • 2 Speakers</span>
+                </div>
+                <div class="status col-span-2">
+                  <span class="flex items-center gap-1">
+                    <span class="status-dot completed"></span>
+                    Completed
+                  </span>
+                </div>
+                <div class="date col-span-2">Oct 18, 2023</div>
+                <div class="duration col-span-2 place-end">15:04</div>
+              </div>
+              <div class="grid-table-content grid">
+                <div class="title col-span-6 flex flex-col">
+                  <span class="audio-title">Ambient Mic Placement Strategy</span>
+                  <span class="audio-title-desc">On-site Recording • 1 Speaker</span>
+                </div>
+                <div class="status col-span-2">
+                  <span class="flex items-center gap-1">
+                    <span class="status-dot draft"></span>
+                    Draft
+                  </span>
+                </div>
+                <div class="date col-span-2">Oct 15, 2023</div>
+                <div class="duration col-span-2 place-end">1:04:22</div>
+              </div>
+              <div class="grid-table-content grid">
+                <div class="title col-span-6 flex flex-col">
+                  <span class="audio-title">Glass Facades and North Wing Flutter Echo</span>
+                  <span class="audio-title-desc">Main Sanctuary • 2 Speakers</span>
+                </div>
+                <div class="status col-span-2">
+                  <span class="flex items-center gap-1">
+                    <span class="status-dot completed"></span>
+                    Completed
+                  </span>
+                </div>
+                <div class="date col-span-2">Oct 12, 2023</div>
+                <div class="duration col-span-2 place-end">32:45</div>
+              </div>
+            </div>
+          </div>
         </section>
         <section id="templates" class="section flex-center templates">
           <h1>Templates Section</h1>
         </section>
-        <section id="analytics" class="section flex-center analytics">
-          <h1>Analytics Section</h1>
+        <section id="analytics" class="section analytics">
+          <div class="wrap">
+            <div class="flex flex-col gap-10">
+              <div class="card flex flex-col gap-6">
+                <div class="flex items-center justify-between">
+                  <div class="flex flex-col">
+                    <span class="sub-text">Account Overview</span>
+                    <h2>App Usage</h2>
+                  </div>
+                  <div class="textbox-right flex flex-col">
+                    <span class="hours">
+                      <span class="hours-used">4.2</span> / 5.0
+                    </span>
+                    <p class="sub-text">Hours used this month</p>
+                  </div>
+                </div>
+                <div class="progress-bar">
+                  <div class="bar"></div>
+                </div>
+              </div>
+              <div class="grid gap-6 card-grid">
+                <div class="card flex flex-col">
+                  <p class="card-title sub-text">Total Projects</p>
+                  <div class="flex items-baseline gap-2">
+                    <span id="total-projects" class="main-text">12</span>
+                    <span class="sub-text">Saved</span>
+                  </div>
+                </div>
+                <div class="card flex flex-col">
+                  <p class="card-title sub-text">Total Characters</p>
+                  <div class="flex items-baseline gap-2">
+                    <span id="total-chars" class="main-text">85,000</span>
+                  </div>
+                </div>
+                <div class="card flex flex-col">
+                  <p class="card-title sub-text">Average Duration</p>
+                  <div class="flex items-baseline gap-2">
+                    <span id="avg-duration" class="main-text">14:20</span>
+                    <span class="sub-text">mins</span>
+                  </div>
+                </div>
+              </div>
+              <div class="grid gap-6 card-grid-alt">
+                <div class="card flex justify-between items-start">
+                  <div class="flex flex-col">
+                    <p class="card-title sub-text">Oldest Project</p>
+                    <h3>Urban Soundscape Vol. I</h3>
+                  </div>
+                  <span class="sub-text-alt">Oct 12, 2023</span>
+                </div>
+                <div class="card flex justify-between items-start">
+                  <div class="flex flex-col">
+                    <p class="card-title sub-text">Newest Project</p>
+                    <h3>Minimalist Echo Study</h3>
+                  </div>
+                  <span class="sub-text-alt">Just now</span>
+                </div>
+              </div>
+              <div class="activity-section">
+                <h3 class="sub-text">Recent Activity</h3>
+                <div class="activity-table">
+                  <div class="table-header grid">
+                    <div class="col-span-6 sub-text">File Name</div>
+                    <div class="col-span-2 sub-text">Duration</div>
+                    <div class="col-span-2 sub-text">Date Uploaded</div>
+                    <div class="col-span-2 sub-text place-content-end">Status</div>
+                  </div>
+                  <div class="table-content grid">
+                    <div class="col-span-6 file-name">atrium_reverb_test.wav</div>
+                    <div class="col-span-2 duration">04:12</div>
+                    <div class="col-span-2 date">Nov 24, 2023</div>
+                    <div class="col-span-2 place-content-end status completed items-center flex gap-1">
+                      <span class="indicator"></span>
+                      Completed
+                    </div>
+                  </div>
+                  <div class="table-content grid">
+                    <div class="col-span-6 file-name">concrete_echo_01.mp3</div>
+                    <div class="col-span-2 duration">12:45</div>
+                    <div class="col-span-2 date">Nov 22, 2023</div>
+                    <div class="col-span-2 place-content-end status completed items-center flex gap-1">
+                      <span class="indicator"></span>
+                      Completed
+                    </div>
+                  </div>
+                  <div class="table-content grid">
+                    <div class="col-span-6 file-name">exterior_ambience_draft.wav</div>
+                    <div class="col-span-2 duration">08:20</div>
+                    <div class="col-span-2 date">Nov 21, 2023</div>
+                    <div class="col-span-2 place-content-end status failed items-center flex gap-1">
+                      <span class="indicator"></span>
+                      Failed
+                    </div>
+                  </div>
+                  <div class="table-content grid">
+                    <div class="col-span-6 file-name">stairwell_impulse_response.flac</div>
+                    <div class="col-span-2 duration">02:10</div>
+                    <div class="col-span-2 date">Nov 18, 2023</div>
+                    <div class="col-span-2 place-content-end status completed items-center flex gap-1">
+                      <span class="indicator"></span>
+                      Completed
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
       </main>
     </div>
