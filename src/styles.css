@@ -56,13 +56,13 @@ header{
   border-bottom: 1px solid var(--border-subtle);
   padding: .7rem 0;
   /* Premium glass morphism */
-  /* background: linear-gradient(
+  background: linear-gradient(
     to bottom,
     rgba(11, 12, 16, 0.2) 0%,
     rgba(11, 12, 16, 0.1) 100%
   );
   backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%); */
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
   transition: all var(--duration-normal) var(--ease-standard);
 }
 header .menu-btn{
@@ -463,6 +463,7 @@ header .menu-btn{
 }
 .analytics .card{
   padding: 2rem;
+  flex-wrap: wrap;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
   background: rgba(255, 255, 255, 0.03);
@@ -516,6 +517,7 @@ header .menu-btn{
   font-weight: var(--fw-medium);
   font-size: var(--fs-sm);
   line-height: 1.25rem;
+  margin-bottom: 1rem;
 }
 .card-title{
   margin-bottom: 1rem;
@@ -633,6 +635,26 @@ header .menu-btn{
 }
 
 
+
+/* ============================================
+   MOBILE OVERLAY (Premium Blur Effect)
+============================================ */
+.overlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: opacity var(--duration-normal) var(--ease-standard);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+body.open-nav .overlay{
+  opacity: 1;
+  pointer-events: all;
+}
 
 
 

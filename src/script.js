@@ -204,7 +204,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-
+const uploadBtnSecondary = document.querySelector('.upload-btn-alt')
+uploadBtnSecondary.addEventListener('click', ()=> {
+  const transcriptionNavLink = document.querySelector('[data-id="transcription"]');
+  transcriptionNavLink.click()  
+})
 
 // Initialize theme toggle
 // const toggleBtn = document.querySelector('.toggle-btn')
@@ -255,5 +259,100 @@ if (emptyFooter) {
     }
   });
 }
+
+
+// ============================================
+// MOBILE MENU FUNCTIONALITY
+// ============================================
+
+const menuBtn = document.getElementById('menu');
+const sidebar = document.querySelector('.sidebar');
+
+// Function to close the mobile menu
+function closeMobileMenu() {
+  document.body.classList.remove('open-nav');
+  // console.log('Mobile menu closed');
+}
+
+// Function to open the mobile menu
+function openMobileMenu() {
+  document.body.classList.add('open-nav');
+  // console.log('Mobile menu opened');
+}
+
+// Function to toggle the mobile menu
+function toggleMobileMenu() {
+  document.body.classList.toggle('open-nav');
+  const isOpen = document.body.classList.contains('open-nav');
+  // console.log(`Mobile menu ${isOpen ? 'opened' : 'closed'}`);
+}
+
+// Menu button click handler
+if (menuBtn) {
+  menuBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevent event from bubbling up
+    toggleMobileMenu();
+  });
+}
+
+// Close menu when nav link is clicked
+navLinks.forEach((navLink) => {
+  navLink.addEventListener('click', () => {
+    // Only close on mobile (when sidebar is position: fixed)
+    if (window.innerWidth <= 763) {
+      closeMobileMenu();
+      // console.log('Nav link clicked - closing mobile menu');
+    }
+  });
+});
+
+// Close menu when clicking outside sidebar
+document.addEventListener('click', (e) => {
+  const isMenuOpen = document.body.classList.contains('open-nav');
+  const clickedInsideSidebar = sidebar.contains(e.target);
+  const clickedMenuBtn = menuBtn.contains(e.target);
+  
+  // If menu is open, click is outside sidebar, and not on menu button
+  if (isMenuOpen && !clickedInsideSidebar && !clickedMenuBtn) {
+    closeMobileMenu();
+    // console.log('Clicked outside sidebar - closing mobile menu');
+  }
+});
+
+// Prevent clicks inside sidebar from closing the menu
+if (sidebar) {
+  sidebar.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

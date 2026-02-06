@@ -51,7 +51,6 @@
   <script type="module" src="./src/script.js"></script>
 </head>
 <body class="">
-  <!-- <div class="overlay"></div> -->
   <div id="onboarding" class="banner">
     <header>
       <div class="wrap">
@@ -271,6 +270,7 @@
   </div>
   <div id="main-app">
     <div class="app-grid grid">
+      <div class="overlay"></div>
       <header class="full-width">
         <div class="wrap flex-between">
           <div class="app-logo flex items-center gap-1">
@@ -417,7 +417,7 @@
                 </label>
                 <input type="text" name="search" id="search" placeholder="Search transcriptions, dates or keywords..." autocomplete="off">
               </div>
-              <button class="upload-btn flex items-center">
+              <button class="upload-btn upload-btn-alt flex items-center">
                 <i data-lucide="plus"></i>
                 New Upload
               </button>
@@ -583,9 +583,9 @@
                 <div class="activity-table">
                   <div class="table-header grid">
                     <div class="col-span-6 sub-text">File Name</div>
-                    <div class="col-span-2 sub-text">Duration</div>
-                    <div class="col-span-2 sub-text">Date Uploaded</div>
-                    <div class="col-span-2 sub-text place-content-end">Status</div>
+                    <div class="col-span-2 sub-text duration">Duration</div>
+                    <div class="col-span-2 sub-text date">Date Uploaded</div>
+                    <div class="col-span-2 sub-text status place-content-end">Status</div>
                   </div>
                   <div class="table-content grid">
                     <div class="col-span-6 file-name">atrium_reverb_test.wav</div>

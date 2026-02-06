@@ -76,6 +76,26 @@
   .name-input {
     font-size: var(--fs-sm);
   }
+  .grid-table-content .status,
+  .grid-table-content .date,
+  .grid-table-header .status,
+  .grid-table-header .date,
+  .activity-table .duration,
+  .activity-table .status {
+    grid-column: span 3 / span 3;
+    justify-self: end;
+    text-align: right;
+  }
+  .grid-table-content .duration,
+  .grid-table-header .duration{
+    display: none;
+  }
+  .audio-title-desc {
+    display: none;
+  }
+  .activity-table .date{
+    display: none;
+  }
 }
 
 
