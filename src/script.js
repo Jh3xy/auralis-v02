@@ -12,6 +12,7 @@ console.log('Auralis v02-0.00')
 
 // Import JS files here
 import { toggleClass, createInitials  } from './js/utils'
+import { uploadAndTranscribe } from "./js/transcribe";
 
 window.createInitials = createInitials
 
@@ -218,31 +219,6 @@ uploadBtnSecondary.addEventListener('click', ()=> {
 // })
 
 
-
-// Grab file upload input for API use
-const audioInput = document.getElementById('audio-input')
-audioInput.addEventListener("change", ()=> {
-  const audio = audioInput.files[0];
-  // Check if an actual audio file was selected
-  if (!audio) {
-    console.log('No audio Uploaded')
-    return
-  }
-
-  // Convert audio size from Bytes to MB and check if larger than 500MB as per Assembly AI's specs
-  const sizeInMB = audio.size / (1024 * 1024)
-  if (sizeInMB >= 500) {
-    console.log('Cannot upload file greater than 500MB')
-    return
-  }
-  console.log(`${audio.name} has been uploaded`);
-  console.log(`Audio type is ${audio.type}`);
-  console.log(`Audio size is ${sizeInMB.toFixed(2)}`);
-})
-
-
-
-
 // Empty State - Navigate to Transcription section when footer is clicked
 const emptyFooter = document.querySelector('.empty-footer');
 
@@ -330,7 +306,48 @@ if (sidebar) {
 
 
 
+// Transcription feature
 
+// Grab file upload input for API use
+const audioInput = document.getElementById('audio-input')
+// make callback in event listner asynchronous (async ..) so we we can await the uploadAndTranscribe function (await uploadAndTranscribe(audio))
+audioInput.addEventListener("change", async ()=> {
+  const audio = audioInput.files[0];
+  // Check if an actual audio file was selected
+  if (!audio) {
+    console.log('No audio Uploaded')
+    return
+  }
+
+  // Convert audio size from Bytes to MB and check if larger than 500MB as per Assembly AI's specs
+  const sizeInMB = audio.size / (1024 * 1024)
+  if (sizeInMB >= 500) {
+    console.log('Cannot upload file greater than 500MB')
+    return
+  }
+  console.log(`${audio.name} has been uploaded`);
+  console.log(`Audio type is ${audio.type}`);
+  console.log(`Audio size is ${sizeInMB.toFixed(2)}`);
+
+
+  try {
+    // Show loading state while waiting for server response and audio transcript
+    console.log('Starting transcription');
+
+    // upload audio with uploadAndTranscribe() and await as this might take time
+    const transcriptionText = await uploadAndTranscribe(audio);
+
+    // Edit later to update Ui while waiting for transcriptionText
+    console.log('Transcribing.....');
+
+    console.log('Transcript ready:', transcriptionText)
+    alert('Transcription complete! Check console for text.');
+
+  } catch (error) {
+    console.error('Failed to transcribe:', error);
+    alert('Transcription failed. See console for details.');
+  }
+})
 
 
 
