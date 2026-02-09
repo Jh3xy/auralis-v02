@@ -8,6 +8,33 @@
 .inline-flex { display: inline-flex; }
 .inline-grid { display: inline-grid; }
 .hidden { display: none; }
+  
+.loading-dock.show-url-box .upload-btn {
+  display: none;
+}
+ /* Hide URL box by default */
+.loading-dock .url-box {
+  display: none;
+}
+
+/* Show URL box when toggled */
+.loading-dock.show-url-box .url-box {
+  display: block;
+}
+.url-btn.url-toggle .default {
+  display: none;
+}
+.url-btn.url-toggle .url-text {
+  display: block;
+}
+.url-btn .url-text {
+  display: none;
+}
+.url-btn .default {
+  display: block;
+}
+
+
 
 /* ============================================
 FLEXBOX

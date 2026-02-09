@@ -2,46 +2,58 @@
 
 // Transcription Module - transcribe.js
 
-
-
 /**
  * Upload and transcribe function
  * 
- * Uploads audio file to server and gets transcription
- * @param {File} file - Audio file from input element
+ * @param {string} type - Either 'file' or 'url'
+ * @param {File|string} data - File object or URL string
  * @returns {Promise<string>} - Transcribed text
  */
-
-export async function uploadAndTranscribe(file) {
+export async function uploadAndTranscribe(type, data) {
   try {
-    // Create formData to send uploaded audio in HTTp request
-    const formData = new FormData()
-    formData.append('audio', file)
-    console.log(`Uploading ${file.name} - type ${file.type}...`)
-
-    // Send file to server endpoint
+    let body;
+    let headers = {};
+    
+    if (type === 'file') {
+      // File upload - use FormData
+      const formData = new FormData();
+      formData.append('audio', data);
+      body = formData;
+      
+      console.log(`Uploading file: ${data.name} (${data.type})...`);
+      
+    } else if (type === 'url') {
+      // URL upload - send JSON
+      body = JSON.stringify({ audioUrl: data });
+      headers['Content-Type'] = 'application/json';
+      
+      console.log(`Sending URL: ${data}...`);
+      
+    } else {
+      throw new Error('Invalid upload type. Must be "file" or "url"');
+    }
+    
+    // Send to server
     const response = await fetch('http://localhost:3001/api/upload', {
       method: 'POST',
-      body: formData
+      headers: headers,
+      body: body
     });
-
-    // if server responds with error
+    
+    // Check for errors
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Upload failed');
     }
-
-    // Parse JSON response from server
-    const data = await response.json();
-
-    console.log('Data received;', data.text)
-    // return transcript text
-    return data.text
-
+    
+    // Parse response
+    const result = await response.json();
+    console.log('Data received:', result.text);
+    
+    return result.text;
+    
   } catch (error) {
     console.error('Transcription error:', error);
     throw error;
   }
 }
-
-

@@ -76,25 +76,54 @@
   .name-input {
     font-size: var(--fs-sm);
   }
-  .grid-table-content .status,
-  .grid-table-content .date,
-  .grid-table-header .status,
-  .grid-table-header .date,
-  .activity-table .duration,
-  .activity-table .status {
-    grid-column: span 3 / span 3;
-    justify-self: end;
-    text-align: right;
-  }
-  .grid-table-content .duration,
-  .grid-table-header .duration{
-    display: none;
-  }
   .audio-title-desc {
+    margin-bottom: .5rem;
+  }
+  .grid-table h2{
+    margin-top: 2rem;
+    margin-bottom: 0;
+  }
+  .grid-table-header {
     display: none;
   }
-  .activity-table .date{
+  .grid-table-content {
+    gap: 2px;
+  }
+  .grid-table-content > * {
+    grid-column: 1 / -1;
+  }
+  .grid-table-content .duration{
+    opacity: 0.4;
+  }
+  .search-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .search-bar .upload-btn{
+    align-self: flex-end;
+    margin-bottom: 14px;
+  }
+  .activity-table .table-header{
     display: none;
+  }
+  .activity-table .table-content{
+    /* 1. Change 12 columns to just 2 for mobile */
+    grid-template-columns: 1fr auto; 
+    grid-template-areas: 
+      "file-name status"
+      "duration duration";
+    gap: 10px;
+  }
+  .activity-table .table-content .file-name {
+    grid-column: 1 / -4;
+    grid-area: file-name;
+  }
+  .activity-table .table-content .duration {
+    grid-area: duration;
+  }
+  .activity-table .table-content .status {
+    grid-area: status;
+    justify-self: end;
   }
 }
 

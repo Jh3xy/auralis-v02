@@ -373,21 +373,31 @@
               Upload Audio
               <input type="file" accept="audio/*" name="audio" id="audio-input">
             </label>
-            <div class="flex gap-6  mt-8 mb-2">
+
+            <div class="url-box">
+              <input type="url" name="audio" id="url-audio-input" class="url-audio-input" placeholder="https://example.com/audio.mp3">
+              <button class="url-upload-btn">Upload Audio</button>
+              <p class="url-desc">Some links may work and some may not</p>
+            </div>
+
+            <div class="flex gap-6 mt-8 mb-2">
               <div class="flex gap-2 footer">
                 <i data-lucide="shield-check"></i>
                 <span>Encrypted</span>
               </div>
               <div class="flex gap-2 footer">
                 <i data-lucide="zap"></i>
-                <span>Fast Transcription</span>
+                <span>Fast</span>
               </div>
             </div>
           </div>
           <div class="footer-secondary flex gap-5">
-            <div class="flex gap-2 footer items-center">
-              <i data-lucide="link-2"></i>
-              <span>Paste URL</span>
+            <div class="url-btn flex gap-2 footer items-center">
+              <i data-lucide="link-2" class="default"></i>
+              <span class="default">Paste URL</span>
+
+              <i data-lucide="link-2" class="url-text"></i>
+              <span class="url-text">File upload</span>
             </div>
             <div class="flex gap-2 footer">
               <i data-lucide="history"></i>
@@ -591,7 +601,7 @@
                     <div class="col-span-6 file-name">atrium_reverb_test.wav</div>
                     <div class="col-span-2 duration">04:12</div>
                     <div class="col-span-2 date">Nov 24, 2023</div>
-                    <div class="col-span-2 place-content-end status completed items-center flex gap-1">
+                    <div class="col-span-2 status completed items-center flex gap-1">
                       <span class="indicator"></span>
                       Completed
                     </div>
@@ -600,7 +610,7 @@
                     <div class="col-span-6 file-name">concrete_echo_01.mp3</div>
                     <div class="col-span-2 duration">12:45</div>
                     <div class="col-span-2 date">Nov 22, 2023</div>
-                    <div class="col-span-2 place-content-end status completed items-center flex gap-1">
+                    <div class="col-span-2 status completed items-center flex gap-1">
                       <span class="indicator"></span>
                       Completed
                     </div>
@@ -609,7 +619,7 @@
                     <div class="col-span-6 file-name">exterior_ambience_draft.wav</div>
                     <div class="col-span-2 duration">08:20</div>
                     <div class="col-span-2 date">Nov 21, 2023</div>
-                    <div class="col-span-2 place-content-end status failed items-center flex gap-1">
+                    <div class="col-span-2 status failed items-center flex gap-1">
                       <span class="indicator"></span>
                       Failed
                     </div>
@@ -618,7 +628,7 @@
                     <div class="col-span-6 file-name">stairwell_impulse_response.flac</div>
                     <div class="col-span-2 duration">02:10</div>
                     <div class="col-span-2 date">Nov 18, 2023</div>
-                    <div class="col-span-2 place-content-end status completed items-center flex gap-1">
+                    <div class="col-span-2 status completed items-center flex gap-1">
                       <span class="indicator"></span>
                       Completed
                     </div>

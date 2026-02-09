@@ -278,6 +278,8 @@ header .menu-btn{
 .loading-dock {
   border: 1px dashed var(--border-subtle);
   padding: 2rem 3rem;
+  width: 90%;
+  max-width: 500px;
   border-radius: var(--radius-md);
   transition: var(--transition-colors);
 }
@@ -312,7 +314,7 @@ header .menu-btn{
   margin-bottom: 2rem;
   font-size: var(--fs-xs);
 }
-.upload-btn{
+[class*= "upload-btn"]{
   color: var(--text-inverse);
   padding: 0.65rem 2rem;
   margin-bottom: 1rem;
@@ -322,7 +324,7 @@ header .menu-btn{
   line-height: 1.25rem;
   cursor: pointer;
 }
-.upload-btn:hover{
+[class*= "upload-btn"]:hover{
   background-color: rgb(from var(--text-main) r g b / 0.81);
 }
 .loading-dock .footer,
@@ -632,6 +634,37 @@ header .menu-btn{
   height: 14px;
   margin: 0;
   opacity: 1;
+}
+.url-box{
+  text-align: center;
+  /* padding: 1rem; */
+}
+.url-box .url-upload-btn{
+  margin-top: 1rem;
+  margin-bottom: 6px;
+}
+.url-box input[type="url"] {
+  background-color: transparent;
+  border: 2px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  outline: none;
+  font-family: inherit;
+  width: 100%;
+  color: var(--text-main);
+  padding: 6px;
+  width: 90%;
+}
+.url-box input[type="url"]::placeholder{
+  opacity: 0.6;
+  font-size: var(--fs-xs);
+}
+.url-box input[type="url"]:focus {
+  border: 2px solid var(--color-slate-dark);
+}
+.url-box .url-desc{
+  opacity: 0.34;
+  font-size: 10px;
+  font-weight: var(--fw-light);
 }
 
 
