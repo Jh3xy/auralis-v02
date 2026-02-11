@@ -28,6 +28,10 @@ window.createInitials = createInitials
 async function handleTranscription() {
   const fileInput = document.getElementById('audio-input');
   const urlInput = document.getElementById('url-audio-input');
+
+  const urlDesc = document.querySelector('.url-desc');
+  const uploadStatus = document.querySelector('.state');
+
   
   let uploadType, uploadData;
   
@@ -53,29 +57,51 @@ async function handleTranscription() {
     
     // Basic URL validation
     if (!uploadData.startsWith('http://') && !uploadData.startsWith('https://')) {
-      alert('Please enter a valid URL starting with http:// or https://');
+      // alert('Please enter a valid URL starting with http:// or https://');
+      urlDesc.innerHTML = 'Please enter a valid URL starting with <span class="highlight">http://</span> or <span class="highlight">https://</span>';
       return;
+    } else {
+      urlDesc.innerHTML = 'Some links may work and some may not';
     }
     
     console.log(`URL: ${uploadData}`);
     
   } else {
-    alert('Please select a file or enter a URL');
+    // alert('Please select a file or enter a URL');
+    urlDesc.innerHTML = 'Please select a file or enter a <span class="highlight">URL</span>';
     return;
   }
   
   try {
     console.log('Starting transcription...');
-    // Click Projects section and replace empty state with loading state
-    const projectSection = document.querySelector('[data-id ="projects"]');
+    // grab elements for state switching
+    const projectSection = document.getElementById('projects')
+    const projectTab = document.querySelector('.nav-link[data-id="projects"]')
+    const file = document.querySelector('.file.loading-sub-text')
+    const transcriptEditor = document.querySelector('.transcript-body')
+
+    // Show Loading State
+    uploadStatus.innerText = 'Active'
+    uploadStatus.classList.remove('failed')
+
     projectSection.classList.add('loading')
-    projectSection.click();
+    file.innerText = `${uploadType === 'file' ? uploadData.name : uploadData}...`
+    projectTab.click();
     
     // Call transcribe function with type and data
     const transcriptText = await uploadAndTranscribe(uploadType, uploadData);
     
-    console.log('Transcript ready:', transcriptText);
-    alert('Transcription complete! Check console for text.');
+    // Remove loading state and replace with transcript editor state
+    // console.log('Transcript ready:', transcriptText);
+    // alert('Transcription complete! Check console for text.');
+    
+    // Inject transcripts immediatley
+    transcriptEditor.innerText = `${transcriptText}`
+
+    // Show Loaded State
+    projectSection.classList.remove('loading')
+    projectSection.classList.add('loaded')
+
     
     // Clear inputs after success
     fileInput.value = '';
@@ -83,9 +109,14 @@ async function handleTranscription() {
     
   } catch (error) {
     console.error('Failed to transcribe:', error);
-    alert(`Transcription failed: ${error.message}`);
+    // alert(`Transcription failed: ${error.message}`);
+
+    uploadStatus.innerText = 'Failed';
+    uploadStatus.classList.add('failed');
   }
 }
+
+
 
 // Attach to file input change
 const audioInput = document.getElementById('audio-input');
@@ -194,9 +225,10 @@ dashboardBtn.addEventListener("click", ()=>{
 
 // Handle active class toggles
 
+
+
 // Nav links
 const navLinks = document.querySelectorAll('.nav-link')
-
 // Callback function to handle section switching
 function handleSectionSwitch(clickedElement) {
   // Check if the clicked element has a data-id attribute
@@ -206,7 +238,7 @@ function handleSectionSwitch(clickedElement) {
     // Get all sections
     const sections = document.querySelectorAll('.section');
 
-    // TODO: Save current targetId to LocalStorage
+    // Save current targetId to LocalStorage
     localStorage.setItem('current-section', targetId)
     const currentSection = localStorage.getItem('current-section')
     console.log(currentSection)
@@ -397,7 +429,6 @@ urlButton.addEventListener("click", ()=> {
   // Hide or show urlBox with toggled class
   toggleClass(dock, 'show-url-box')
   toggleClass(btn, 'url-toggle')
-  console.log('Something isnt workinggg')
 })
 
 

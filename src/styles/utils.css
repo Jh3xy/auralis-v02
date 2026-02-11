@@ -33,19 +33,39 @@
   display: block;
 }
 
+
+/* Projects Section - Empty state */
+.section.projects .empty-state{
+  display: flex;
+}
+.section.projects .loading-state{
+  display: none;
+}
+.section.projects .transcript-state{
+  display: none;
+}
+
+/* Project section - Loading State */
 .section.projects.loading .empty-state{
+  display: none;
+}
+.section.projects.loading .transcript-state{
   display: none;
 }
 .section.projects.loading .loading-state{
   display: block;
 }
-.section.projects .empty-state{
+
+/* Projects Section - Loaded State */
+.section.projects.loaded .transcript-state{
   display: block;
 }
-.section.projects .loading-state{
+.section.projects.loaded .empty-state{
   display: none;
 }
-
+.section.projects.loaded .loading-state{
+  display: none;
+}
 
 
 /* ============================================

@@ -51,6 +51,7 @@ export async function uploadAndTranscribe(type, data) {
     // Parse response
     const result = await response.json();
     console.log('Data received:', result.text);
+    console.log(result)
     
     return result.text;
     
