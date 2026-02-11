@@ -672,6 +672,7 @@ header .menu-btn{
 
 .loading-state{
   text-align: center;
+  width: 80%;
 }
 .loading-header{
   margin-bottom: 2rem;
