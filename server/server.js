@@ -17,7 +17,9 @@ console.log('Loaded key:', !!process.env.ASSEMBLYAI_API_KEY); // should log true
 
 // Initialize Express app
 const app = express();
-const PORT = 3001;
+// const PORT = 3001;
+const PORT = process.env.PORT || 3001;
+const HOST = '0.0.0.0';
 
 // Enable CORS so frontend (port 5173) can call this server (port 3001)
 app.use(cors());
@@ -134,7 +136,6 @@ app.post('/api/upload', upload.single('audio'), async (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`✅ Server running on http://localhost:${PORT}`);
-  console.log(`📝 API endpoint: POST http://localhost:${PORT}/api/upload`);
+app.listen(PORT, HOST, () => {
+  console.log(`✅ Server running on port ${PORT}`);
 });

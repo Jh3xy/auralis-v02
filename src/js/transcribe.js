@@ -9,6 +9,8 @@
  * @param {File|string} data - File object or URL string
  * @returns {Promise<string>} - Transcribed text
  */
+
+const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 export async function uploadAndTranscribe(type, data) {
   try {
     let body;
@@ -34,7 +36,7 @@ export async function uploadAndTranscribe(type, data) {
     }
     
     // Send to server
-    const response = await fetch('http://localhost:3001/api/upload', {
+    const response = await fetch(`${API_BASE}/api/upload`, {
       method: 'POST',
       headers: headers,
       body: body

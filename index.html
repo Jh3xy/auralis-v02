@@ -375,9 +375,9 @@
             </label>
 
             <div class="url-box">
+              <p class="url-desc">Some links may work and some may not</p>
               <input type="url" name="audio" id="url-audio-input" class="url-audio-input" placeholder="https://example.com/audio.mp3">
               <button class="url-upload-btn">Upload Audio</button>
-              <p class="url-desc">Some links may work and some may not</p>
             </div>
 
             <div class="flex gap-6 mt-8 mb-2">
@@ -416,6 +416,38 @@
               <i data-lucide="arrow-left"></i>
               <span>Go to Transcription</span>
             </div>
+          </div>
+          <div class="loading-state">
+            <div class="loading-header flex-col-center gap-2">
+              <i data-lucide="audio-lines"></i>
+              <h2>Processing Audio</h2>
+              <p class="loading-desc">Analyzing frequencies and identifying speakers</p>
+            </div>
+            <div class="loading-progress">
+              <div class="progress-bar">
+                <div id="upload-progress-bar"></div>
+              </div>
+              <div class="upload-details flex-between">
+                <div class="file loading-sub-text">Architectural_Review_01.wav</div>
+                <div class="percentage loading-sub-text">64%</div>
+              </div>
+            </div>
+            <div class="loading-metrics flex-between">
+              <div class="file-size flex-col-center">
+                <span class="loading-sub-text">Time Elapsed</span>
+                <span class="time metric">00:12</span>
+              </div>
+              <div class="est-time flex-col-center">
+                <span class="loading-sub-text">Est. Remaining</span>
+                <span class="metric">00:08</span>
+              </div>
+              <div class="upload-status flex-col-center">
+                <span class="loading-sub-text">Status</span>
+                <span class="">Active</span>
+              </div>
+            </div>
+
+            <span class="info-desc flex items-center gap-2"> <i data-lucide="info"></i> Large files may take up to 5 minutes to process.</span>
           </div>
         </section>
         <section id="recordings" class="section recordings">

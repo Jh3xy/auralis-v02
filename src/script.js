@@ -13,8 +13,10 @@ console.log('Auralis v02-1.00')
 // Import JS files here
 import { toggleClass, createInitials  } from './js/utils'
 import { uploadAndTranscribe } from "./js/transcribe";
+import { eventHub } from "./js/eventhub";
 
 window.createInitials = createInitials
+
 
 
 
@@ -64,6 +66,10 @@ async function handleTranscription() {
   
   try {
     console.log('Starting transcription...');
+    // Click Projects section and replace empty state with loading state
+    const projectSection = document.querySelector('[data-id ="projects"]');
+    projectSection.classList.add('loading')
+    projectSection.click();
     
     // Call transcribe function with type and data
     const transcriptText = await uploadAndTranscribe(uploadType, uploadData);
@@ -393,53 +399,6 @@ urlButton.addEventListener("click", ()=> {
   toggleClass(btn, 'url-toggle')
   console.log('Something isnt workinggg')
 })
-
-
-// Transcription feature
-
-// // Grab file upload input for API use
-// const audioInput = document.getElementById('audio-input')
-// // make callback in event listner asynchronous (async ..) so we we can await the uploadAndTranscribe function (await uploadAndTranscribe(audio))
-// audioInput.addEventListener("change", async ()=> {
-//   const audio = audioInput.files[0];
-//   // Check if an actual audio file was selected
-//   if (!audio) {
-//     console.log('No audio Uploaded')
-//     return
-//   }
-
-//   // Convert audio size from Bytes to MB and check if larger than 500MB as per Assembly AI's specs
-//   const sizeInMB = audio.size / (1024 * 1024)
-//   if (sizeInMB >= 500) {
-//     console.log('Cannot upload file greater than 500MB')
-//     return
-//   }
-//   console.log(`${audio.name} has been uploaded`);
-//   console.log(`Audio type is ${audio.type}`);
-//   console.log(`Audio size is ${sizeInMB.toFixed(2)}`);
-
-
-//   try {
-//     // Show loading state while waiting for server response and audio transcript
-//     console.log('Starting transcription');
-
-//     // upload audio with uploadAndTranscribe() and await as this might take time
-//     const transcriptionText = await uploadAndTranscribe(audio);
-
-//     // Edit later to update Ui while waiting for transcriptionText
-//     console.log('Transcribing.....');
-
-//     console.log('Transcript ready:', transcriptionText)
-//     alert('Transcription complete! Check console for text.');
-
-//   } catch (error) {
-//     console.error('Failed to transcribe:', error);
-//     alert('Transcription failed. See console for details.');
-//   }
-// })
-
-
-
 
 
 

@@ -20,19 +20,22 @@ body {
   color: var(--text-main);
   position: relative;
 }
-/* .overlay{
-  position: absolute;
+.overlay{
+  position: fixed;
   inset: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(16, 11, 11, 0.2) 0%,
-    rgba(11, 12, 16, 0.1) 100%
-  );
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  transition: all var(--duration-normal) var(--ease-standard);
-  display: none;
-} */
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: opacity var(--duration-normal) var(--ease-standard);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+body.open-nav .overlay{
+  opacity: 1;
+  pointer-events: all;
+}
 body.open-nav{
   overflow: hidden;
 }
@@ -667,27 +670,81 @@ header .menu-btn{
   font-weight: var(--fw-light);
 }
 
-
-
-/* ============================================
-   MOBILE OVERLAY (Premium Blur Effect)
-============================================ */
-.overlay{
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  transition: opacity var(--duration-normal) var(--ease-standard);
-  opacity: 0;
-  pointer-events: none;
-  z-index: 1000;
+.loading-state{
+  text-align: center;
+}
+.loading-header{
+  margin-bottom: 2rem;
+}
+.loading-header [data-lucide] {
+  color: var(--color-accent-1);
+  width: 24px;
+  height: 32px;
+}
+.loading-header h2 {
+  font-weight: var(--fw-medium);
+  /* letter-spacing: -1px; */
+  line-height: 1.75rem;
+  font-size: var(--fs-lg);
+}
+.loading-desc{
+  opacity: 0.4;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+.loading-progress .progress-bar{
+  margin-bottom: 0.75rem;
+  background-color: rgb(255 255 255 / 0.1);
+}
+#upload-progress-bar{
+  --width: 60%;
+  width: var(--width);
+  height: 100%;
+  border-radius: var(--radius-full);
+  background-color: var(--color-accent-1);
+  box-shadow: 0 0 15px rgba(167, 243, 208, 0.4);
+  animation: pulse-opacity 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes pulse-opacity {
+  0%, 100% {
+      opacity: 1;
+  }
+  50% {
+      opacity: 0.6;
+  }
+}
+.upload-details{
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+}
+.file {
+  letter-spacing: 0.1em;
+  opacity: 0.3;
+}
+.loading-metrics{
+  color: var(--text-muted);
+}
+.loading-metrics .metric{
+  font-family: var(--ff-secondary);
+  color: var(--text-main);
+  align-self: flex-start;
+  opacity: 0.7;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
 }
 
-body.open-nav .overlay{
-  opacity: 1;
-  pointer-events: all;
+.info-desc{
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  margin-top: 4rem;
+  opacity: 0.3;
 }
+
+
+
+
+
 
 
 

@@ -16,7 +16,6 @@
 .loading-dock .url-box {
   display: none;
 }
-
 /* Show URL box when toggled */
 .loading-dock.show-url-box .url-box {
   display: block;
@@ -32,6 +31,19 @@
 }
 .url-btn .default {
   display: block;
+}
+
+.section.projects.loading .empty-state{
+  display: none;
+}
+.section.projects.loading .loading-state{
+  display: block;
+}
+.section.projects .empty-state{
+  display: block;
+}
+.section.projects .loading-state{
+  display: none;
 }
 
 
