@@ -85,8 +85,18 @@ app.post('/api/upload', upload.single('audio'), async (req, res) => {
     // Request transcription (same for both file and URL)
     console.log('Requesting transcription...');
     const transcript = await client.transcripts.transcribe({
-      audio: audioSource
-    });
+    audio: audioSource,
+    speaker_labels: true,     // enable speaker diarization
+    format_text: true,        // punctuation + capitalization / cleaned text
+    language_detection: true // auto language detection (if not specified)
+
+    // other useful options you can toggle:
+    // auto_chapters: true,      // creates chapter objects with start/end + summary
+    // auto_highlights: true,    // generates highlight snippets
+    // punctuate: true,          // explicit punctuation option (if available)
+    // entity_detection: true,   // named entity info
+    // disfluencies: false       // remove filler words if true/false depending on API version
+  });
     
     // Check status
     if (transcript.status === 'error') {
@@ -96,11 +106,13 @@ app.post('/api/upload', upload.single('audio'), async (req, res) => {
     console.log('Transcription complete!');
     
     // Return result
-    res.json({
-      text: transcript.text,
-      id: transcript.id,
-      status: transcript.status
-    });
+    // res.json({
+    //   text: transcript.text,
+    //   id: transcript.id,
+    //   status: transcript.status
+    // });
+
+    res.json(transcript)
     
   } catch (error) {
     console.error('Server error:', error.message);

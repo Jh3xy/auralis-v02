@@ -1,3 +1,7 @@
+// IMPORTANT: Notes:
+// - Add a small delay (setTimeout) when switching states to allow CSS transitions to play for smoother UX
+// - Use small spinner button beside file name in loading state for better feedback and in buttons in loading dock
+
 
 // Stylesheets
 import './styles/variables.css'
@@ -6,20 +10,20 @@ import './styles.css'
 import './styles/utils.css'
 import './styles/onboarding.css'
 import './styles/queries.css'
+import './styles/transcripts.css'
 
 console.log('Vite is Running Script!');
 console.log('Auralis v02-1.00')
 
 // Import JS files here
-import { toggleClass, createInitials  } from './js/utils'
+import { toggleClass, createInitials, formatTime  } from './js/utils'
 import { uploadAndTranscribe } from "./js/transcribe";
 import { eventHub } from "./js/eventhub";
 
 window.createInitials = createInitials
 
-
-
-
+let utterances;
+window.utterances = utterances;
 
 // ============================================
 // UNIFIED TRANSCRIPTION HANDLER
@@ -96,7 +100,42 @@ async function handleTranscription() {
     // alert('Transcription complete! Check console for text.');
     
     // Inject transcripts immediatley
-    transcriptEditor.innerText = `${transcriptText}`
+    
+
+    // 1. Clear the editor first so it's empty
+    transcriptEditor.innerHTML = ''; 
+
+    utterances = transcriptText.utterances;
+
+    utterances.forEach((utterance) => {
+      // 2. Format the time for this specific block
+      const startTime = formatTime(utterance.start);
+      const endTime = formatTime(utterance.end);
+
+      // 3. Turn the text string into an array of words wrapped in spans
+      // We add a space after ${word} so they don't all stick together
+      const wordsHTML = utterance.text
+        .split(' ')
+        .map(word => `<span>${word} </span>`)
+        .join('');
+
+      // 4. Create the full speaker box structure
+      const speakerBox = `
+        <div class="speaker-box flex items-start gap-8">
+          <div class="speaker-tag flex gap-1 shrink-0 flex-col">
+            <span class="speaker">Speaker ${utterance.speaker}</span>
+            <span class="speaker-metadata sub-text">${startTime} - ${endTime}</span>
+          </div>
+          <p class="speaker-text">
+            ${wordsHTML}
+          </p>
+        </div>
+      `;
+
+      // 5. Inject it into the editor
+      transcriptEditor.insertAdjacentHTML('beforeend', speakerBox);
+    });
+
 
     // Show Loaded State
     projectSection.classList.remove('loading')
@@ -110,12 +149,21 @@ async function handleTranscription() {
   } catch (error) {
     console.error('Failed to transcribe:', error);
     // alert(`Transcription failed: ${error.message}`);
+    // Return back to transcripts tab so user can try again
+    const transcriptTab = document.querySelector('.nav-link[data-id="transcription"]');
 
     uploadStatus.innerText = 'Failed';
     uploadStatus.classList.add('failed');
+    transcriptTab.click();
+    /**
+     * TODO: Add modal or some sort of feeback for user
+     *  to know error occurred and how to fix it (file too large, invalid URL, etc.)
+     *  */ 
+    
+
+
   }
 }
-
 
 
 // Attach to file input change
@@ -125,8 +173,6 @@ audioInput.addEventListener('change', handleTranscription);
 // Attach to URL upload button
 const urlUploadBtn = document.querySelector('.url-upload-btn');
 urlUploadBtn.addEventListener('click', handleTranscription);
-
-
 
 
 

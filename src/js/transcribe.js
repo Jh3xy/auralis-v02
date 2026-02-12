@@ -49,11 +49,17 @@ export async function uploadAndTranscribe(type, data) {
     }
     
     // Parse response
-    const result = await response.json();
-    console.log('Data received:', result.text);
-    console.log(result)
+    // const result = await response.json();
+    // console.log('Data received:', result.text);
+    // console.log(result)
     
-    return result.text;
+    // return result.text;
+
+    // IMPORTANT: return the full JSON (contains words / utterances)
+    const result = await response.json();
+    console.log('Full transcript result received:', result);
+    console.log('Utterrances', result.utterances);
+    return result; // <-- was result.text before
     
   } catch (error) {
     console.error('Transcription error:', error);

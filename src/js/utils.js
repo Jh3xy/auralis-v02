@@ -101,6 +101,16 @@ function createInitials(username) {
 }
 
 
+// Format time for speak diarization print in UI 
+function formatTime(ms) {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  // This ensures we get "01:05" instead of "1:5"
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+}
 
 
-export { toggleClass,createInitials }
+
+
+export { toggleClass,createInitials , formatTime }

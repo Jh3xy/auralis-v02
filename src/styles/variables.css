@@ -40,9 +40,9 @@
   ============================================ */
   
   /* Background Colors */
-  --bg-app: #0B0C10;
-  --bg-surface: #16181D;
-  --bg-sidebar: #000000;
+  --bg-app: hsl(228, 19%, 5%);
+  --bg-surface: hsl(223, 14%, 10%);
+  --bg-sidebar: hsl(0, 0%, 0%);
 
   /* Text Colors */
   --text-main: rgba(255, 255, 255, 0.9);
@@ -53,6 +53,7 @@
   --color-accent-1: #A7F3D0;    /* Mint */
   --color-accent-2: #E0F2FE;    /* Sky Blue */
   --color-highlight: #E9D5FF;   /* Lavender */
+  --audio-btn-primary: hsl(240, 100%, 92%);
 
   /* Status Colors */
   --color-success: #4ADE80;
