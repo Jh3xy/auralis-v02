@@ -125,6 +125,132 @@
     grid-area: status;
     justify-self: end;
   }
+  .transcript-state {
+    padding: 1rem 1.98rem;
+    position: relative;
+  }
+  .transcript-details{
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .transcript-title {
+    margin-left: 0;
+  }
+  .transcript-details .sub-text{
+    margin-top: 1.8rem;
+  }
+  .transcript-body {
+    width: 95%;
+    padding-bottom: 5rem; /* Space for floating export button */
+  }
+  
+  /* MOBILE AUDIO PLAYER - STICKY AT TOP */
+  .audio-player {
+    position: sticky;
+    top: 10px;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    backdrop-filter: none;
+    max-width: 100%;
+  }
+  
+  /* Audio wrapper contains the actual player controls with blur */
+  .audio-wrapper {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-full);
+    background: hsla(240, 20%, 19%, 0.85);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: none;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  
+  /* Controls section - make more compact */
+  .audio-player .controls {
+    padding-right: 0.75rem;
+    border-right: 1px solid var(--border-subtle);
+    gap: 0.5rem;
+  }
+  
+  /* Adjust button sizes for mobile */
+  .play-btn {
+    width: 2rem;
+    height: 2rem;
+  }
+  
+  .audio-btn [data-lucide] {
+    width: 11px;
+    height: 11px;
+  }
+  
+  /* Audio slider section */
+  /* .audio-wrapper .audio {
+  }
+   */
+
+  /* Buttons container - reposition for mobile */
+  .audio-player > .buttons {
+    position: fixed;
+    bottom: 2rem;
+    right: 1.5rem;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0;
+    border: none !important;
+  }
+  
+  /* Playback speed button - styled for floating */
+  .audio-player > .buttons .playback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 11px;
+    background-color: rgb(from var(--text-main) r g b / 0.1);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: var(--radius-full);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Export button - floating at bottom right */
+  .audio-player > .buttons .export-btn {
+    padding: 0.75rem 1.25rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border-radius: var(--radius-full);
+  }
+  
+  .speaker-box {
+    flex-direction: column;
+    gap: .5rem;
+  }
+  .speaker-text {
+    font-size: var(--fs-sm);
+  }
+  .speaker-box {
+    flex-direction: column;
+    gap: .5rem;
+  }
+  .speaker-text {
+    font-size: var(--fs-sm);
+  }
 }
 
 

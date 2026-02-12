@@ -35,7 +35,13 @@
   border: 1px solid var(--border-subtle);
   position: sticky;
   top: 16px;
-  z-index: 100; /* This is the magic number */
+  z-index: 100; 
+}
+.audio-wrapper{
+  display: flex;
+  flex: 1;
+  gap: 2rem;
+  z-index: 100; 
 }
 .audio-player .controls{
   padding-right: 1.5rem;

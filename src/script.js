@@ -9,14 +9,14 @@ import './styles/resets.css'
 import './styles.css'
 import './styles/utils.css'
 import './styles/onboarding.css'
-import './styles/queries.css'
 import './styles/transcripts.css'
+import './styles/queries.css'
 
 console.log('Vite is Running Script!');
 console.log('Auralis v02-1.00')
 
 // Import JS files here
-import { toggleClass, createInitials, formatTime  } from './js/utils'
+import { toggleClass, createInitials, formatTime, formatDate  } from './js/utils'
 import { uploadAndTranscribe } from "./js/transcribe";
 import { eventHub } from "./js/eventhub";
 
@@ -82,6 +82,8 @@ async function handleTranscription() {
     const projectSection = document.getElementById('projects')
     const projectTab = document.querySelector('.nav-link[data-id="projects"]')
     const file = document.querySelector('.file.loading-sub-text')
+    const transcriptTitle = document.querySelector('.transcript-title')
+    const transcriptDate = document.querySelector('.current-date')
     const transcriptEditor = document.querySelector('.transcript-body')
 
     // Show Loading State
@@ -90,6 +92,8 @@ async function handleTranscription() {
 
     projectSection.classList.add('loading')
     file.innerText = `${uploadType === 'file' ? uploadData.name : uploadData}...`
+    transcriptTitle.innerText = `${uploadType === 'file' ? uploadData.name : uploadData}...`
+    transcriptDate.innerText = formatDate(Date.now(), true);
     projectTab.click();
     
     // Call transcribe function with type and data

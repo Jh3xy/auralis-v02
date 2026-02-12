@@ -452,24 +452,26 @@
           <div class="transcript-state">
             <!-- TODO: adding custom Audio player here -->
              <div class="audio-player flex-between">
-              <div class="controls flex-between gap-4">
-                <button class="audio-btn backward-btn flex-center">
-                  <i data-lucide="skip-back"></i>
-                </button>
-                <button class="play-btn flex-center">
-                  <i data-lucide="play"></i>
-                </button>
-                <buttonn class="audio-btn foward-btn flex-center">
-                  <i data-lucide="skip-forward"></i>
-                </buttonn>
-              </div>
-              <div class="audio flex-col flex-1">
-                <div class="flex-between items-center audio-data">
-                  <span class="current-time">01:45</span>
-                  <span class="audio-name">Architectural Audio Review.mp3</span>
-                  <span class="total-time">05:00</span>
+              <div class="audio-wrapper">
+                <div class="controls flex-between gap-4">
+                  <button class="audio-btn backward-btn flex-center">
+                    <i data-lucide="skip-back"></i>
+                  </button>
+                  <button class="play-btn flex-center">
+                    <i data-lucide="play"></i>
+                  </button>
+                  <buttonn class="audio-btn foward-btn flex-center">
+                    <i data-lucide="skip-forward"></i>
+                  </buttonn>
                 </div>
-                <input type="range" name="audio" id="audio-range">
+                <div class="audio flex-col flex-1">
+                  <div class="flex-between items-center audio-data">
+                    <span class="current-time">01:45</span>
+                    <span class="audio-name">Architectural Audio Review.mp3</span>
+                    <span class="total-time">05:00</span>
+                  </div>
+                  <input type="range" name="audio" id="audio-range">
+                </div>
               </div>
               <div class="buttons flex items-center gap-4">
                 <div class="playback flex items-center gap-1">
@@ -485,7 +487,7 @@
             <div class="transcript-details flex-between">
               <div class="flex flex-col">
                 <h1 class="transcript-title">Architectural Audio Review</h1>
-                <p class="title-desc">Recorded on October 24, 2023 • 2 Speakers Identified</p>
+                <p class="title-desc">Recorded on <span class="current-date">October 24, 2023</span> • <span class="speakers">2 Speakers</span> Identified</p>
               </div>
               <div class="sub-text">Auto-Saved</div>
             </div>

@@ -111,6 +111,111 @@ function formatTime(ms) {
 }
 
 
+/**
+ * Converts a timestamp (like Date.now()) to formatted date string
+ * @param {number} timestamp - Unix timestamp in milliseconds
+ * @param {boolean} useMonthName - If true, uses month name (e.g., "Feb"), if false uses number (e.g., "02")
+ * @returns {string} Formatted date string
+ */
+function formatDate(timestamp, useMonthName = false) {
+  const date = new Date(timestamp);
+  
+  const month = date.getMonth() + 1; // 0-indexed, so add 1
+  const day = date.getDate();
+  const year = date.getFullYear().toString().slice(-2); // Last 2 digits
+  
+  if (useMonthName) {
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${monthNames[date.getMonth()]} ${day}, ${year}`;
+  }
+  
+  // Numeric format with leading zeros
+  const monthStr = month.toString().padStart(2, '0');
+  const dayStr = day.toString().padStart(2, '0');
+  
+  return `${monthStr} ${dayStr}, ${year}`;
+}
 
 
-export { toggleClass,createInitials , formatTime }
+// Additional date formatting functions for different contexts (e.g., full date, relative time)
+
+/**
+ * Get current date formatted
+ * @param {boolean} useMonthName - If true, uses month name
+ * @returns {string} Current date formatted
+ */
+function getCurrentDate(useMonthName = false) {
+  return formatDate(Date.now(), useMonthName);
+}
+
+/**
+ * Formats date in full format (e.g., "October 24, 2023")
+ * @param {number} timestamp - Unix timestamp
+ * @returns {string} Full formatted date
+ */
+function formatDateFull(timestamp) {
+  const date = new Date(timestamp);
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                      'July', 'August', 'September', 'October', 'November', 'December'];
+  
+  return `${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+}
+
+/**
+ * Formats time in 12-hour format (e.g., "02:30 PM")
+ * @param {number} timestamp - Unix timestamp
+ * @returns {string} Formatted time
+ */
+function formatTime(timestamp) {
+  const date = new Date(timestamp);
+  let hours = date.getHours();
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  
+  hours = hours % 12;
+  hours = hours ? hours : 12; // If 0, make it 12
+  
+  return `${hours}:${minutes} ${ampm}`;
+}
+
+/**
+ * Get relative time (e.g., "Just now", "2 mins ago", "3 hours ago")
+ * @param {number} timestamp - Unix timestamp
+ * @returns {string} Relative time string
+ */
+function getRelativeTime(timestamp) {
+  const now = Date.now();
+  const diff = now - timestamp;
+  
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  
+  if (seconds < 60) return 'Just now';
+  if (minutes < 60) return `${minutes} min${minutes > 1 ? 's' : ''} ago`;
+  if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`;
+  
+  // If older than a week, return formatted date
+  return formatDate(timestamp, true);
+}
+
+
+
+// Export all utility functions
+export {
+  // DOM Utilities
+  toggleClass,
+  createInitials,
+  
+  // Date Formatting
+  formatDate,
+  getCurrentDate,
+  formatDateFull,
+  
+  // Time Utilities
+  formatTime,
+  getRelativeTime,
+};
