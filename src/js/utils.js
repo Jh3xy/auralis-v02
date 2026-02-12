@@ -167,17 +167,17 @@ function formatDateFull(timestamp) {
  * @param {number} timestamp - Unix timestamp
  * @returns {string} Formatted time
  */
-function formatTime(timestamp) {
-  const date = new Date(timestamp);
-  let hours = date.getHours();
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-  const ampm = hours >= 12 ? 'PM' : 'AM';
+// function formatTime(timestamp) {
+//   const date = new Date(timestamp);
+//   let hours = date.getHours();
+//   const minutes = date.getMinutes().toString().padStart(2, '0');
+//   const ampm = hours >= 12 ? 'PM' : 'AM';
   
-  hours = hours % 12;
-  hours = hours ? hours : 12; // If 0, make it 12
+//   hours = hours % 12;
+//   hours = hours ? hours : 12; // If 0, make it 12
   
-  return `${hours}:${minutes} ${ampm}`;
-}
+//   return `${hours}:${minutes} ${ampm}`;
+// }
 
 /**
  * Get relative time (e.g., "Just now", "2 mins ago", "3 hours ago")
