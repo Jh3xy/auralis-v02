@@ -641,7 +641,6 @@ header .menu-btn{
 }
 .url-box{
   text-align: center;
-  /* padding: 1rem; */
 }
 .url-box .url-upload-btn{
   margin-top: 1rem;
@@ -657,6 +656,7 @@ header .menu-btn{
   color: var(--text-main);
   padding: 6px;
   width: 90%;
+  font-size: var(--fs-xs);
 }
 .url-box input[type="url"]::placeholder{
   opacity: 0.6;

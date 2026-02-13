@@ -94,6 +94,9 @@ async function handleTranscription() {
     file.innerText = `${uploadType === 'file' ? uploadData.name : uploadData}...`
     transcriptTitle.innerText = `${uploadType === 'file' ? uploadData.name : uploadData}...`
     transcriptDate.innerText = formatDate(Date.now(), true);
+    if (projectSection.classList.contains('loaded')) {
+      projectSection.classList.remove('loaded');
+    }
     projectTab.click();
     
     // Call transcribe function with type and data
