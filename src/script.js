@@ -16,7 +16,7 @@ console.log('Vite is Running Script!');
 console.log('Auralis v02-1.00')
 
 // Import JS files here
-import { toggleClass, createInitials, formatTime, formatDate, resetAudioUI  } from './js/utils'
+import { toggleClass, createInitials, formatTime, formatDate  } from './js/utils'
 import { uploadAndTranscribe } from "./js/transcribe";
 import { eventHub } from "./js/eventhub";
 
@@ -46,6 +46,7 @@ const audioInput = document.getElementById('audio-input');
 const urlInput = document.getElementById('url-audio-input');
 const urlUploadBtn = document.querySelector('.url-upload-btn');
 const label = document.querySelector('label[for="audio-input"]');
+// const urllabel = document.querySelector('.url-upload-btn');
 const urlDesc = document.querySelector('.url-desc');
 const uploadStatus = document.querySelector('.state');
 
@@ -177,6 +178,20 @@ async function handleTranscription() {
   }
 }
 
+// Function to reset the custom audio player UI
+function resetAudioUI() {
+  // Reset the play button to the 'play' icon
+  playBtn.innerHTML = `<i data-lucide="play"></i>`;
+  
+  // Reset the slider to the beginning
+  audioRange.value = 0;
+  
+  // Re-run Lucide to render the new icon
+  if (window.lucide) {
+    lucide.createIcons();
+  }
+}
+
 // 2. Initialize EVENT LISTENERS
 audioInput.addEventListener('change', () => {
   if (audioInput.files && audioInput.files[0]) {
@@ -202,7 +217,7 @@ urlUploadBtn.addEventListener('click', () => {
 });
 
 // Add event listeners to play btn in custom audio interface
-const playBtn = document.getElementById('customPlayBtn')
+const playBtn = document.getElementById('play-btn')
 playBtn.addEventListener("click", ()=> {
   // Check if audio element is paused
   if (transcriptAudio.paused) {
