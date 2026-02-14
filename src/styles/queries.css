@@ -189,7 +189,17 @@
     border-right: 1px solid var(--border-subtle);
     gap: 0.5rem;
   }
-  
+  .audio-btn{
+    display: none;
+  }
+  .audio-data{
+    width: 90%;
+  }
+  .audio-data span:first-child,
+  .audio-data span:last-child {
+    font-size: 8px;
+    opacity: 0.6;
+  }
   /* Adjust button sizes for mobile */
   .play-btn {
     width: 2rem;
@@ -254,6 +264,9 @@
   }
   .speaker-text {
     font-size: var(--fs-sm);
+  }
+  .edit-controls .edit-btn{
+    display: block;
   }
 }
 

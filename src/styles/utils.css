@@ -33,6 +33,14 @@
   display: block;
 }
 
+.url-upload-btn.disabled,
+label[for="audio-input"].disabled {
+  cursor: not-allowed;
+  opacity: 0.6;        
+  /* pointer-events: none;   */
+  filter: grayscale(1); 
+}
+
 
 /* Projects Section - Empty state */
 .section.projects .empty-state{

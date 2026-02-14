@@ -16,7 +16,7 @@ console.log('Vite is Running Script!');
 console.log('Auralis v02-1.00')
 
 // Import JS files here
-import { toggleClass, createInitials, formatTime, formatDate  } from './js/utils'
+import { toggleClass, createInitials, formatTime, formatDate, resetAudioUI  } from './js/utils'
 import { uploadAndTranscribe } from "./js/transcribe";
 import { eventHub } from "./js/eventhub";
 
@@ -25,161 +25,208 @@ window.createInitials = createInitials
 let utterances;
 window.utterances = utterances;
 
+// Function that sets UI states
+function updateState(element, state) {
+  const states = ['loading', 'loaded'];
+  element.classList.remove(...states)
+  element.classList.add(state)
+}
+
+
+// Wait promise for enforcng mimimum dispay time
+// This creates a "pause" that doesn't freeze the browser
+const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+
+
+// === TRANSCRIPTION FUNCTION
 // ============================================
-// UNIFIED TRANSCRIPTION HANDLER
-// ============================================
+
+const audioInput = document.getElementById('audio-input');
+const urlInput = document.getElementById('url-audio-input');
+const urlUploadBtn = document.querySelector('.url-upload-btn');
+const label = document.querySelector('label[for="audio-input"]');
+const urlDesc = document.querySelector('.url-desc');
+const uploadStatus = document.querySelector('.state');
+
+let currentAudioUrl = null;
+const transcriptAudio = document.getElementById('audio-engine');
 
 async function handleTranscription() {
-  const fileInput = document.getElementById('audio-input');
-  const urlInput = document.getElementById('url-audio-input');
-
-  const urlDesc = document.querySelector('.url-desc');
-  const uploadStatus = document.querySelector('.state');
-
-  
   let uploadType, uploadData;
+
+  // Revoke any other previous audio urls to free memory
+  if (currentAudioUrl) {
+    URL.revokeObjectURL(currentAudioUrl);
+    currentAudioUrl = null;
+  }
+
+  // UI CLEANUP: Reset the play button and slider
+  resetAudioUI();
   
-  // Determine what user provided
-  if (fileInput.files && fileInput.files[0]) {
-    // User selected a file
+  // Use the global variables instead of re-fetching them
+  if (audioInput.files && audioInput.files[0]) {
     uploadType = 'file';
-    uploadData = fileInput.files[0];
-    
-    // Validate file size
+    uploadData = audioInput.files[0];
     const sizeInMB = uploadData.size / (1024 * 1024);
     if (sizeInMB >= 500) {
       alert('File too large. Maximum size is 500MB.');
       return;
     }
     
-    console.log(`File: ${uploadData.name} (${sizeInMB.toFixed(2)} MB)`);
-    
+    // Update Audio player in transcript
+
+    // create a new one
+    const src = URL.createObjectURL(uploadData);
+    currentAudioUrl = src;  
+    // set transcriptAudio src to src varibale and load
+    transcriptAudio.src = src;
+    transcriptAudio.load()
+
+
   } else if (urlInput.value.trim()) {
-    // User entered a URL
     uploadType = 'url';
     uploadData = urlInput.value.trim();
+
     
-    // Basic URL validation
     if (!uploadData.startsWith('http://') && !uploadData.startsWith('https://')) {
-      // alert('Please enter a valid URL starting with http:// or https://');
       urlDesc.innerHTML = 'Please enter a valid URL starting with <span class="highlight">http://</span> or <span class="highlight">https://</span>';
       return;
-    } else {
-      urlDesc.innerHTML = 'Some links may work and some may not';
     }
-    
-    console.log(`URL: ${uploadData}`);
-    
+
+    transcriptAudio.src = uploadData;
+    transcriptAudio.load();
   } else {
-    // alert('Please select a file or enter a URL');
     urlDesc.innerHTML = 'Please select a file or enter a <span class="highlight">URL</span>';
     return;
   }
-  
+
+  const start = Date.now();
+  const MIN_DISPLAY_TIME = 2500; 
+
   try {
-    console.log('Starting transcription...');
-    // grab elements for state switching
-    const projectSection = document.getElementById('projects')
-    const projectTab = document.querySelector('.nav-link[data-id="projects"]')
-    const file = document.querySelector('.file.loading-sub-text')
-    const transcriptTitle = document.querySelector('.transcript-title')
-    const transcriptDate = document.querySelector('.current-date')
-    const transcriptEditor = document.querySelector('.transcript-body')
+    const projectSection = document.getElementById('projects');
+    const projectTab = document.querySelector('.nav-link[data-id="projects"]');
+    const file = document.querySelector('.file.loading-sub-text');
+    const transcriptTitle = document.querySelector('.transcript-title');
+    const audioName = document.querySelector('.audio-name');
+    const transcriptDate = document.querySelector('.current-date');
+    const transcriptEditor = document.querySelector('.transcript-body');
 
-    // Show Loading State
-    uploadStatus.innerText = 'Active'
-    uploadStatus.classList.remove('failed')
-
-    projectSection.classList.add('loading')
-    file.innerText = `${uploadType === 'file' ? uploadData.name : uploadData}...`
-    transcriptTitle.innerText = `${uploadType === 'file' ? uploadData.name : uploadData}...`
+    // UI Prep
+    transcriptTitle.innerText = `${uploadType === 'file' ? uploadData.name : uploadData}...`;
+    audioName.innerText = `${uploadType === 'file' ? uploadData.name : uploadData}...`;
     transcriptDate.innerText = formatDate(Date.now(), true);
-    if (projectSection.classList.contains('loaded')) {
-      projectSection.classList.remove('loaded');
-    }
+    uploadStatus.innerText = 'Active';
+    uploadStatus.classList.remove('failed');
+    file.innerText = `${uploadType === 'file' ? uploadData.name : uploadData}...`;
+
+    updateState(projectSection, 'loading');
     projectTab.click();
-    
-    // Call transcribe function with type and data
+
     const transcriptText = await uploadAndTranscribe(uploadType, uploadData);
     
-    // Remove loading state and replace with transcript editor state
-    // console.log('Transcript ready:', transcriptText);
-    // alert('Transcription complete! Check console for text.');
-    
-    // Inject transcripts immediatley
-    
+    const elapsed = Date.now() - start;
+    if (elapsed < MIN_DISPLAY_TIME) {
+      await wait(MIN_DISPLAY_TIME - elapsed);
+    }
 
-    // 1. Clear the editor first so it's empty
     transcriptEditor.innerHTML = ''; 
-
     utterances = transcriptText.utterances;
 
     utterances.forEach((utterance) => {
-      // 2. Format the time for this specific block
       const startTime = formatTime(utterance.start);
       const endTime = formatTime(utterance.end);
+      const wordsHTML = utterance.text.split(' ').map(word => `<span>${word} </span>`).join('');
 
-      // 3. Turn the text string into an array of words wrapped in spans
-      // We add a space after ${word} so they don't all stick together
-      const wordsHTML = utterance.text
-        .split(' ')
-        .map(word => `<span>${word} </span>`)
-        .join('');
-
-      // 4. Create the full speaker box structure
       const speakerBox = `
-        <div class="speaker-box flex items-start gap-8">
-          <div class="speaker-tag flex gap-1 shrink-0 flex-col">
-            <span class="speaker">Speaker ${utterance.speaker}</span>
-            <span class="speaker-metadata sub-text">${startTime} - ${endTime}</span>
-          </div>
-          <p class="speaker-text">
-            ${wordsHTML}
-          </p>
-        </div>
-      `;
-
-      // 5. Inject it into the editor
+          <div class="speaker-box flex items-start gap-8">
+            <div class="speaker-tag flex gap-1 shrink-0 flex-col">
+              <span class="speaker">Speaker 1</span><span class="speaker-metadata sub-text">00:00 - 00:45</span>
+                  <div class="edit-controls flex gap-2"><button class="edit-btn btn"><i data-lucide="square-pen"></i></button><div class="controls-secondary flex gap-1"><buttons class="save-btn btn"><i data-lucide="save"></i></buttons><buttons class="cancel-btn btn"><i data-lucide="ban"></i></buttons></div></div></div><p class="speaker-text">${wordsHTML}</p></div>
+      `
       transcriptEditor.insertAdjacentHTML('beforeend', speakerBox);
+
+      // TODO: Attach event listners for editing .speaker-text
     });
 
+    updateState(projectSection, 'loaded');
 
-    // Show Loaded State
-    projectSection.classList.remove('loading')
-    projectSection.classList.add('loaded')
-
-    
-    // Clear inputs after success
-    fileInput.value = '';
+    // Clean up
+    label.classList.remove('disabled');
+    urlUploadBtn.classList.remove('disabled');
+    label.innerText = 'Upload Audio';
+    urlUploadBtn.innerText = 'Upload Audio';
+    audioInput.value = '';
     urlInput.value = '';
     
   } catch (error) {
     console.error('Failed to transcribe:', error);
-    // alert(`Transcription failed: ${error.message}`);
-    // Return back to transcripts tab so user can try again
-    const transcriptTab = document.querySelector('.nav-link[data-id="transcription"]');
-
     uploadStatus.innerText = 'Failed';
     uploadStatus.classList.add('failed');
+
+    await wait(2000); 
+
+    label.classList.remove('disabled');
+    urlUploadBtn.classList.remove('disabled');
+    label.innerText = 'Upload Audio';
+    urlUploadBtn.innerText = 'Upload Audio';
+
+    const transcriptTab = document.querySelector('.nav-link[data-id="transcription"]');
     transcriptTab.click();
-    /**
-     * TODO: Add modal or some sort of feeback for user
-     *  to know error occurred and how to fix it (file too large, invalid URL, etc.)
-     *  */ 
-    
-
-
   }
 }
 
+// 2. Initialize EVENT LISTENERS
+audioInput.addEventListener('change', () => {
+  if (audioInput.files && audioInput.files[0]) {
+    label.classList.add('disabled');
+    label.innerText = 'Uploading...';
 
-// Attach to file input change
-const audioInput = document.getElementById('audio-input');
-audioInput.addEventListener('change', handleTranscription);
+    setTimeout(() => {
+      handleTranscription();
+    }, 1000);
+  }
+});
 
-// Attach to URL upload button
-const urlUploadBtn = document.querySelector('.url-upload-btn');
-urlUploadBtn.addEventListener('click', handleTranscription);
+urlUploadBtn.addEventListener('click', () => {
+  if (urlInput.value.trim()) {
+    urlUploadBtn.classList.add('disabled');
+    urlUploadBtn.innerText = 'Uploading...';
+    setTimeout(() => {
+      handleTranscription();
+    }, 1000);
+  } else {
+    handleTranscription();
+  }
+});
+
+// Add event listeners to play btn in custom audio interface
+const playBtn = document.getElementById('customPlayBtn')
+playBtn.addEventListener("click", ()=> {
+  // Check if audio element is paused
+  if (transcriptAudio.paused) {
+    // Play audio and change btn icon for UI feedback
+    transcriptAudio.play()
+    playBtn.innerHTML = `<i data-lucide="pause"></i>`
+  } else {
+    transcriptAudio.pause()
+    playBtn.innerHTML = `<i data-lucide="play"></i>`
+  }
+  lucide.createIcons();
+})
+
+// Sync ranger slider input with audio
+const audioRange = document.getElementById('audio-range');
+transcriptAudio.addEventListener("timeupdate", ()=> {
+  const percentage = (transcriptAudio.currentTime / transcriptAudio.duration) * 100;
+  audioRange.value = percentage;
+});
+audioRange.addEventListener('input', () => {
+  const time = (audioRange.value / 100) * transcriptAudio.duration;
+  transcriptAudio.currentTime = time;
+});
+
 
 
 

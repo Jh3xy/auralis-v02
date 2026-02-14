@@ -369,15 +369,15 @@
             <h2>Ready to Listen?</h2>
             <p class="file-desc">Supported: MP3, OGG, WAV, AAC, FLAC</p>
 
-            <label for="audio-input" class="upload-btn">
+            <label for="audio-input" class="upload-btn dock-btn" id="audio-upload-btn">
               Upload Audio
-              <input type="file" accept="audio/*" name="audio" id="audio-input">
+              <input type="file" accept="audio/*" name="audio" id="audio-input" class="audio-input">
             </label>
 
             <div class="url-box">
               <p class="url-desc">Some links may work and some may not</p>
               <input type="url" name="audio" id="url-audio-input" class="url-audio-input" placeholder="https://example.com/audio.mp3" autocomplete="off">
-              <button class="url-upload-btn">Upload Audio</button>
+              <button class="url-upload-btn dock-btn">Upload Audio</button>
             </div>
 
             <div class="flex gap-6 mt-8 mb-2">
@@ -405,7 +405,7 @@
             </div>
           </div>
         </section>
-        <section id="projects" class="section flex-center projects">
+        <section id="projects" class="section flex-center projects loaded">
           <div class="empty-state flex flex-col items-center">
             <i data-lucide="file-search-corner"></i>
             <h2>No Projects Yet</h2>
@@ -452,17 +452,18 @@
           <div class="transcript-state">
             <!-- TODO: adding custom Audio player here -->
              <div class="audio-player flex-between">
+              <audio src="" id="audio-engine"></audio>
               <div class="audio-wrapper">
                 <div class="controls flex-between gap-4">
                   <button class="audio-btn backward-btn flex-center">
                     <i data-lucide="skip-back"></i>
                   </button>
-                  <button class="play-btn flex-center">
+                  <button class="play-btn flex-center" id="customPlayBtn">
                     <i data-lucide="play"></i>
                   </button>
-                  <buttonn class="audio-btn foward-btn flex-center">
+                  <button class="audio-btn foward-btn flex-center">
                     <i data-lucide="skip-forward"></i>
-                  </buttonn>
+                  </button>
                 </div>
                 <div class="audio flex-col flex-1">
                   <div class="flex-between items-center audio-data">
@@ -496,6 +497,20 @@
                 <div class="speaker-tag flex gap-1 shrink-0 flex-col">
                   <span class="speaker">Speaker 1</span>
                   <span class="speaker-metadata sub-text">00:00 - 00:45</span>
+
+                  <div class="edit-controls flex gap-2">
+                    <button class="edit-btn btn">
+                      <i data-lucide="square-pen"></i>
+                    </button>
+                    <div class="controls-secondary flex gap-1">
+                      <buttons class="save-btn btn">
+                        <i data-lucide="save"></i>
+                      </buttons>
+                      <buttons class="cancel-btn btn">
+                        <i data-lucide="ban"></i>
+                      </buttons>
+                    </div>
+                  </div>
                 </div>
                 <p class="speaker-text">
                   Welcome to the <span class="active-word">architectural</span> audio review for the downtown project. Today we're going to dive deep into the spatial acoustics of the main atrium and how we can leverage the high ceilings for better sound diffusion.

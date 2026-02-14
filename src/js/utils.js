@@ -2,6 +2,20 @@
 // utils.js
 
 
+// Function to reset the custom audio player UI
+function resetAudioUI() {
+  // Reset the play button to the 'play' icon
+  playBtn.innerHTML = `<i data-lucide="play"></i>`;
+  
+  // Reset the slider to the beginning
+  audioRange.value = 0;
+  
+  // Re-run Lucide to render the new icon
+  if (window.lucide) {
+    lucide.createIcons();
+  }
+}
+
 // toggle active class on elements
 function toggleClass(element, className, callback) {
 
@@ -206,6 +220,9 @@ function getRelativeTime(timestamp) {
 
 // Export all utility functions
 export {
+  // General utilities
+  resetAudioUI,
+  
   // DOM Utilities
   toggleClass,
   createInitials,

@@ -13,6 +13,7 @@
 }
 .transcript-title{
   letter-spacing: -0.025em;
+  margin-left: 0;
   font-weight: var(--fw-extrabold);
   line-height: 2.5rem;
   font-size: var(--fs-xl);
@@ -21,6 +22,9 @@
   opacity: 0.4;
   font-size: var(--fs-xs);
   line-height: 1.25rem;
+}
+#audio-engine{
+  display: none !important;
 }
 .audio-player{
   gap: 2rem;
@@ -90,7 +94,7 @@
 .audio-data .audio-name{
   font-family: var(--ff-primary);
   color: rgb(from var(--text-main) r g b / 1);
-  width: 120px;
+  max-width: 150px;
   overflow: hidden;
   text-wrap-mode: nowrap;
   text-overflow: ellipsis;
@@ -185,7 +189,7 @@ input[type="range"]::-moz-range-thumb {
 }
 .speaker-box {
   position: relative;
-  z-index: -1;
+  /* z-index: -1; */
 }
 .speaker-box:before{
   content: '';
@@ -226,6 +230,29 @@ input[type="range"]::-moz-range-thumb {
   color: var(--text-main);
 }
 
+.edit-controls{
+  margin: 10px 0 1rem;
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+.edit-controls [data-lucide] {
+  width: 15px;
+  height: 15px;
+}
 
+.edit-controls .edit-btn,
+.edit-controls .controls-secondary{
+  display: none;
+}
+.speaker-box:hover .edit-controls .edit-btn{
+  display: block;
+}
+
+.edit-controls.editing .edit-btn{
+  display: none;
+}
+.edit-controls.editing .controls-secondary{
+  display: flex;
+}
 
 
