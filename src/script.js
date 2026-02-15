@@ -146,6 +146,7 @@ async function handleTranscription() {
                   <div class="edit-controls flex gap-2"><button class="edit-btn btn"><i data-lucide="square-pen"></i></button><div class="controls-secondary flex gap-1"><buttons class="save-btn btn"><i data-lucide="save"></i></buttons><buttons class="cancel-btn btn"><i data-lucide="ban"></i></buttons></div></div></div><p class="speaker-text">${wordsHTML}</p></div>
       `
       transcriptEditor.insertAdjacentHTML('beforeend', speakerBox);
+      lucide.createIcons();
 
       // TODO: Attach event listners for editing .speaker-text
     });
@@ -372,7 +373,7 @@ document.addEventListener("DOMContentLoaded", ()=> {
   // on DOMContentLoaded check storage for current section
   const currentSection = localStorage.getItem('current-section')
   if (currentSection) {
-    console.log(`${currentSection} section found`)
+    // console.log(`${currentSection} section found`)
     
     // loop through sections remove show class and add to matching section
     const sections = document.querySelectorAll('.section');
@@ -382,7 +383,7 @@ document.addEventListener("DOMContentLoaded", ()=> {
         sections.forEach((sec) => sec.classList.remove('show'));
         // Add show class to the matching section
         section.classList.add('show');
-        console.log(`Switched to section: ${currentSection} after reload`);
+        // console.log(`Switched to section: ${currentSection} after reload`);
       }
     })
     
@@ -398,7 +399,7 @@ document.addEventListener("DOMContentLoaded", ()=> {
     navlinks.forEach((navLink) => {
       if (navLink.dataset.id === currentSection) {
         navLink.classList.add('active') 
-        console.log(`Activated nav link: ${currentSection}`)
+        // console.log(`Activated nav link: ${currentSection}`)
       }
     })
   } else {
