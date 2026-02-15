@@ -34,6 +34,7 @@
 }
 
 .url-upload-btn.disabled,
+.url-upload-btn:disabled, /* Targets the actual attribute */
 label[for="audio-input"].disabled {
   cursor: not-allowed;
   opacity: 0.6;        

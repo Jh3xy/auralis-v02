@@ -229,7 +229,10 @@ input[type="range"]::-moz-range-thumb {
   font-weight: var(--fw-medium);
   color: var(--text-main);
 }
-
+.audio-size,
+.lang{
+  font-family: var(--ff-secondary);
+}
 .edit-controls{
   margin: 10px 0 1rem;
   color: var(--text-muted);

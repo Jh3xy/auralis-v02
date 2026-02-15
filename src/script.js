@@ -13,7 +13,10 @@ import './styles/transcripts.css'
 import './styles/queries.css'
 
 console.log('Vite is Running Script!');
-console.log('Auralis v01-1.00')
+const APP_VERSION = 'v1.5-1.00';
+const plan = document.querySelector('.plan');
+plan.innerText = `Beta - ${APP_VERSION}`
+console.log(`Auralis ${APP_VERSION}`)
 
 // Import JS files here
 import { toggleClass, createInitials, formatTime, formatDate  } from './js/utils'
@@ -85,13 +88,13 @@ function showToast(msg, type = 'info', duration = 3000) {
 
 const audioInput = document.getElementById('audio-input');
 const urlInput = document.getElementById('url-audio-input');
-const urlUploadBtn = document.querySelector('.url-upload-btn');
+const urlUploadBtn = document.querySelector('.url-upload-btn.dock-btn');
 const label = document.querySelector('label[for="audio-input"]');
-// const urllabel = document.querySelector('.url-upload-btn');
 const urlDesc = document.querySelector('.url-desc');
 const uploadStatus = document.querySelector('.state');
+const audioSize = document.querySelector('.audio-size');
 
-let currentAudioUrl = null;
+let currentAudioUrl = null; //To keep track of the current audio URL for cleanup
 const transcriptAudio = document.getElementById('audio-engine');
 
 async function handleTranscription() {
@@ -111,6 +114,7 @@ async function handleTranscription() {
     uploadType = 'file';
     uploadData = audioInput.files[0];
     const sizeInMB = uploadData.size / (1024 * 1024);
+    audioSize.innerText = `${sizeInMB.toFixed(2)} MB`;
     if (sizeInMB >= 500) {
       alert('File too large. Maximum size is 500MB.');
       return;
@@ -118,7 +122,7 @@ async function handleTranscription() {
     
     // Update Audio player in transcript
 
-    // create a new one
+    // create a new src for audio element
     const src = URL.createObjectURL(uploadData);
     currentAudioUrl = src;  
     // set transcriptAudio src to src varibale and load
@@ -147,6 +151,15 @@ async function handleTranscription() {
   const MIN_DISPLAY_TIME = 2500; 
 
   try {
+    // LOCK UI immediately
+    // label.classList.add('disabled');
+    // urlUploadBtn.classList.add('disabled');
+    toggleClass(label, 'disabled');
+    toggleClass(urlUploadBtn, 'disabled');
+    label.innerText = 'Uploading...';
+    urlUploadBtn.innerText = 'Uploading...';
+
+
     const projectSection = document.getElementById('projects');
     const projectTab = document.querySelector('.nav-link[data-id="projects"]');
     const file = document.querySelector('.file.loading-sub-text');
@@ -154,6 +167,7 @@ async function handleTranscription() {
     const audioName = document.querySelector('.audio-name');
     const transcriptDate = document.querySelector('.current-date');
     const transcriptEditor = document.querySelector('.transcript-body');
+    const transcriptLanguage = document.querySelector('.lang');
 
     // UI Prep
     transcriptTitle.innerText = `${uploadType === 'file' ? uploadData.name : uploadData}...`;
@@ -174,6 +188,7 @@ async function handleTranscription() {
     }
 
     transcriptEditor.innerHTML = ''; 
+    transcriptLanguage.innerText = `${transcriptText.language_code}`;
     utterances = transcriptText.utterances;
 
     utterances.forEach((utterance) => {
@@ -197,15 +212,6 @@ async function handleTranscription() {
 
     // Show success toast for UI feedback
     showToast('Transcription successful!', 'success')
-
-
-    // Clean up
-    label.classList.remove('disabled');
-    urlUploadBtn.classList.remove('disabled');
-    label.innerText = 'Upload Audio';
-    urlUploadBtn.innerText = 'Upload Audio';
-    audioInput.value = '';
-    urlInput.value = '';
     
   } catch (error) {
     console.error('Failed to transcribe:', error);
@@ -217,13 +223,18 @@ async function handleTranscription() {
     // Show error toast for UI feedback
     showToast(`Transcription failed - ${error}`, 'error')
 
-    label.classList.remove('disabled');
-    urlUploadBtn.classList.remove('disabled');
-    label.innerText = 'Upload Audio';
-    urlUploadBtn.innerText = 'Upload Audio';
-
     const transcriptTab = document.querySelector('.nav-link[data-id="transcription"]');
     transcriptTab.click();
+  } finally {
+    // 2. UNLOCK UI here 
+    // label.classList.remove('disabled');
+    // urlUploadBtn.classList.remove('disabled');
+    toggleClass(label, 'disabled');
+    toggleClass(urlUploadBtn, 'disabled');
+    label.innerText = 'Upload Audio';
+    urlUploadBtn.innerText = 'Upload Audio';
+    audioInput.value = '';
+    urlInput.value = '';
   }
 }
 
@@ -242,25 +253,55 @@ function resetAudioUI() {
 }
 
 // 2. Initialize EVENT LISTENERS
+// Sync ranger slider input with audio
+const audioRange = document.getElementById('audio-range');
+const audioTime = document.querySelector('.total-time');
+const currentTime = document.querySelector('.current-time');
+
+transcriptAudio.addEventListener("timeupdate", () => {
+  // Keep the range slider in seconds (it matches the audio player better)
+  audioRange.value = transcriptAudio.currentTime; 
+  
+  // Convert seconds to MS for your specific formatTime function
+  const currentTimeMs = transcriptAudio.currentTime * 1000;
+  currentTime.innerText = formatTime(currentTimeMs); 
+});
+
+// Set the audio time on metadata load for better UX
+transcriptAudio.addEventListener("loadedmetadata", () => {
+  // Convert duration seconds to MS for your utility
+  const durationMs = transcriptAudio.duration * 1000;
+  audioTime.innerText = formatTime(durationMs);
+
+  // Set the slider max to seconds
+  audioRange.max = transcriptAudio.duration;
+  
+  // Reset 0
+  transcriptAudio.currentTime = 0; 
+  audioRange.value = 0;
+
+  if (audioRange.value === audioRange.max) {
+    resetAudioUI();
+  }
+});
+
+audioRange.addEventListener('input', () => {
+  transcriptAudio.currentTime = audioRange.value;
+});
+
 audioInput.addEventListener('change', () => {
   if (audioInput.files && audioInput.files[0]) {
-    label.classList.add('disabled');
-    // ? Can still use toggleClass(label, 'disabled') from ./js/utils.js
-    label.innerText = 'Uploading...';
-
     setTimeout(() => {
       handleTranscription();
-    }, 1000);
+    }, 2000);
   }
 });
 
 urlUploadBtn.addEventListener('click', () => {
   if (urlInput.value.trim()) {
-    urlUploadBtn.classList.add('disabled');
-    urlUploadBtn.innerText = 'Uploading...';
     setTimeout(() => {
       handleTranscription();
-    }, 1000);
+    }, 2000);
   } else {
     handleTranscription();
   }
@@ -278,19 +319,29 @@ playBtn.addEventListener("click", ()=> {
     transcriptAudio.pause()
     playBtn.innerHTML = `<i data-lucide="play"></i>`
   }
+  if (transcriptAudio.ended) {
+    transcriptAudio.currentTime = 0;
+    audioRange.value = 0;
+  }
   lucide.createIcons();
 })
 
-// Sync ranger slider input with audio
-const audioRange = document.getElementById('audio-range');
-transcriptAudio.addEventListener("timeupdate", ()=> {
-  const percentage = (transcriptAudio.currentTime / transcriptAudio.duration) * 100;
-  audioRange.value = percentage;
-});
-audioRange.addEventListener('input', () => {
-  const time = (audioRange.value / 100) * transcriptAudio.duration;
-  transcriptAudio.currentTime = time;
-});
+const backBtn = document.querySelector('.backward-btn')
+backBtn.addEventListener("click", ()=> {
+  transcriptAudio.currentTime = 0;
+  audioRange.value = 0;
+  playBtn.innerHTML = `<i data-lucide="play"></i>`
+  lucide.createIcons();
+})
+
+const fowardBtn = document.querySelector('.forward-btn')
+fowardBtn.addEventListener("click", ()=> {
+  transcriptAudio.currentTime = transcriptAudio.duration;
+  audioRange.value = audioRange.max;
+  playBtn.innerHTML = `<i data-lucide="play"></i>`
+  lucide.createIcons();
+})
+
 
 
 
@@ -406,7 +457,7 @@ function handleSectionSwitch(clickedElement) {
     // Save current targetId to LocalStorage
     localStorage.setItem('current-section', targetId)
     const currentSection = localStorage.getItem('current-section')
-    console.log(currentSection)
+    // console.log(currentSection)
     // Find the matching section
     let matchFound = false;
     
@@ -417,7 +468,7 @@ function handleSectionSwitch(clickedElement) {
         sections.forEach((sec) => sec.classList.remove('show'));
         // Add show class to the matching section
         section.classList.add('show');
-        console.log(`Switched to section: ${targetId}`);
+        // console.log(`Switched to section: ${targetId}`);
       }
     });
     
@@ -511,7 +562,7 @@ if (emptyFooter) {
       // Trigger a click on the Transcription nav link
       transcriptionNavLink.click();
       
-      console.log('Navigated to Transcription section from empty state');
+      // console.log('Navigated to Transcription section from empty state');
     }
   });
 }

@@ -357,7 +357,7 @@
             <div class="pfp uppercase flex-center" id="sidebar-pfp">Tr</div>
             <div class="user-detail">
               <p class="username" id="username">Theo Richard</p>
-              <div class="plan uppercase">Beta v01-1.00</div>
+              <div class="plan uppercase"></div>
             </div>
           </div>
         </div>
@@ -371,8 +371,8 @@
 
             <label for="audio-input" class="upload-btn dock-btn" id="audio-upload-btn">
               Upload Audio
-              <input type="file" accept="audio/*" name="audio" id="audio-input" class="audio-input">
             </label>
+            <input type="file" accept="audio/*" name="audio" id="audio-input" class="audio-input">
 
             <div class="url-box">
               <p class="url-desc">Some links may work and some may not</p>
@@ -447,7 +447,7 @@
               </div>
             </div>
 
-            <span class="info-desc flex items-center gap-2"> <i data-lucide="info"></i> Large files may take up to 5 minutes to process.</span>
+            <span class="info-desc flex items-start gap-2"> <i data-lucide="info"></i> Large files may take up to 5 minutes to process.</span>
           </div>
           <div class="transcript-state">
             <!-- TODO: adding custom Audio player here -->
@@ -461,7 +461,7 @@
                   <button class="play-btn flex-center" id="play-btn">
                     <i data-lucide="play"></i>
                   </button>
-                  <button class="audio-btn foward-btn flex-center">
+                  <button class="audio-btn forward-btn flex-center">
                     <i data-lucide="skip-forward"></i>
                   </button>
                 </div>
@@ -471,7 +471,7 @@
                     <span class="audio-name">Architectural Audio Review.mp3</span>
                     <span class="total-time">05:00</span>
                   </div>
-                  <input type="range" name="audio" id="audio-range" value="0">
+                  <input type="range" name="audio" id="audio-range" min="0" max="100" value="0">
                 </div>
               </div>
               <div class="buttons flex items-center gap-4">
@@ -488,7 +488,7 @@
             <div class="transcript-details flex-between">
               <div class="flex flex-col">
                 <h1 class="transcript-title">Architectural Audio Review</h1>
-                <p class="title-desc">Recorded on <span class="current-date">October 24, 2023</span> • <span class="speakers">2 Speakers</span> Identified</p>
+                <p class="title-desc">Transcribed on <span class="current-date">October 24, 2023</span> • <span class="speakers">2 Speakers</span> Identified • <span class="lang uppercase"></span> • <span class="audio-size"></span></p>
               </div>
               <div class="sub-text">Auto-Saved</div>
             </div>

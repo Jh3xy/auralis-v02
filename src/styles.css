@@ -50,7 +50,7 @@ body.open-nav main *{
   display: block;
  }
 .app-grid{
-  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   grid-template-columns: var(--sidebar-width) 1fr;
   grid-template-rows: auto 1fr; /* Allows each section only be as tall as it needs to be */
@@ -212,10 +212,6 @@ header .menu-btn{
 }
 .nav-primary{
   flex: 1;
-}
-.navbar-secondary .user{
-  position: absolute;
-  top: 0;
 }
 .nav-link{
   color: var(--text-muted);
@@ -714,15 +710,17 @@ header .menu-btn{
 .loading-progress .progress-bar{
   margin-bottom: 0.75rem;
   background-color: rgb(255 255 255 / 0.1);
+  overflow: hidden;
 }
 #upload-progress-bar{
-  --width: 60%;
+  --width: 40%;
   width: var(--width);
   height: 100%;
   border-radius: var(--radius-full);
   background-color: var(--color-accent-1);
   box-shadow: 0 0 15px rgba(167, 243, 208, 0.4);
   animation: pulse-opacity 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  animation: slide 1.6s linear infinite;
 }
 @keyframes pulse-opacity {
   0%, 100% {
@@ -731,6 +729,10 @@ header .menu-btn{
   50% {
       opacity: 0.6;
   }
+}
+@keyframes slide {
+  0%{transform: translateX(-100%);}
+  100%{transform: translateX(300%);}
 }
 .upload-details{
   color: var(--text-muted);

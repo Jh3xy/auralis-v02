@@ -269,17 +269,20 @@
   .edit-controls .edit-btn{
     display: block;
   }
-
   .toast-container {
     top: var(--space-md);
     right: var(--space-sm);
     left: var(--space-sm);
     max-width: none;
   }
-  
   .toast {
     padding: var(--space-sm);
     font-size: var(--fs-xs);
+  }
+  
+  .navbar-secondary .user {
+    position: absolute;
+    top: 0;
   }
 }
 
