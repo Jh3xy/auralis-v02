@@ -13,7 +13,7 @@ import './styles/transcripts.css'
 import './styles/queries.css'
 
 console.log('Vite is Running Script!');
-console.log('Auralis v02-1.00')
+console.log('Auralis v01-1.00')
 
 // Import JS files here
 import { toggleClass, createInitials, formatTime, formatDate  } from './js/utils'
@@ -36,6 +36,47 @@ function updateState(element, state) {
 // Wait promise for enforcng mimimum dispay time
 // This creates a "pause" that doesn't freeze the browser
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Show toast Utility
+function showToast(msg, type = 'info', duration = 3000) {
+  // Create or get toast container
+  let container = document.querySelector('.toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.classList.add('toast-container');
+    document.body.appendChild(container);
+  }
+
+  // Create toast element
+  const toast = document.createElement('div');
+  toast.classList.add('toast', type);
+  
+  // Create toast message
+  const message = document.createElement('span');
+  message.classList.add('toast-message');
+  message.textContent = msg;
+  
+  // Append message to toast
+  toast.appendChild(message);
+  
+  // Append toast to container
+  container.appendChild(toast);
+  console.log(container)
+  // Auto-dismiss after duration
+  setTimeout(() => {
+    toast.classList.add('removing');
+    // Remove from DOM after animation completes
+    setTimeout(() => {
+      toast.remove();
+      // Remove container if no more toasts
+      if (container.children.length === 0) {
+        container.remove();
+      }
+    }, 300); // Match animation duration
+  }, duration);
+  
+  console.log(`Toast: ${msg} (${type})`);
+}
 
 
 
@@ -143,7 +184,7 @@ async function handleTranscription() {
       const speakerBox = `
           <div class="speaker-box flex items-start gap-8">
             <div class="speaker-tag flex gap-1 shrink-0 flex-col">
-              <span class="speaker">Speaker 1</span><span class="speaker-metadata sub-text">00:00 - 00:45</span>
+              <span class="speaker">Speaker 1</span><span class="speaker-metadata sub-text"> ${startTime} - ${endTime}</span>
                   <div class="edit-controls flex gap-2"><button class="edit-btn btn"><i data-lucide="square-pen"></i></button><div class="controls-secondary flex gap-1"><buttons class="save-btn btn"><i data-lucide="save"></i></buttons><buttons class="cancel-btn btn"><i data-lucide="ban"></i></buttons></div></div></div><p class="speaker-text">${wordsHTML}</p></div>
       `
       transcriptEditor.insertAdjacentHTML('beforeend', speakerBox);
@@ -152,6 +193,10 @@ async function handleTranscription() {
     });
 
     updateState(projectSection, 'loaded');
+
+    // Show success toast for UI feedback
+    showToast('Transcription successful!', 'success')
+
 
     // Clean up
     label.classList.remove('disabled');
@@ -167,6 +212,9 @@ async function handleTranscription() {
     uploadStatus.classList.add('failed');
 
     await wait(2000); 
+
+    // Show error toast for UI feedback
+    showToast(`Transcription failed - ${error}`, 'error')
 
     label.classList.remove('disabled');
     urlUploadBtn.classList.remove('disabled');
@@ -196,6 +244,7 @@ function resetAudioUI() {
 audioInput.addEventListener('change', () => {
   if (audioInput.files && audioInput.files[0]) {
     label.classList.add('disabled');
+    // ? Can still use toggleClass(label, 'disabled') from ./js/utils.js
     label.innerText = 'Uploading...';
 
     setTimeout(() => {
@@ -387,7 +436,7 @@ document.addEventListener("DOMContentLoaded", ()=> {
   // on DOMContentLoaded check storage for current section
   const currentSection = localStorage.getItem('current-section')
   if (currentSection) {
-    console.log(`${currentSection} section found`)
+    // console.log(`${currentSection} section found`)
     
     // loop through sections remove show class and add to matching section
     const sections = document.querySelectorAll('.section');
@@ -397,7 +446,7 @@ document.addEventListener("DOMContentLoaded", ()=> {
         sections.forEach((sec) => sec.classList.remove('show'));
         // Add show class to the matching section
         section.classList.add('show');
-        console.log(`Switched to section: ${currentSection} after reload`);
+        // console.log(`Switched to section: ${currentSection} after reload`);
       }
     })
     
@@ -413,7 +462,7 @@ document.addEventListener("DOMContentLoaded", ()=> {
     navlinks.forEach((navLink) => {
       if (navLink.dataset.id === currentSection) {
         navLink.classList.add('active') 
-        console.log(`Activated nav link: ${currentSection}`)
+        // console.log(`Activated nav link: ${currentSection}`)
       }
     })
   } else {

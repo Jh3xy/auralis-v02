@@ -37,7 +37,7 @@
 label[for="audio-input"].disabled {
   cursor: not-allowed;
   opacity: 0.6;        
-  /* pointer-events: none;   */
+  pointer-events: none;  
   filter: grayscale(1); 
 }
 
@@ -74,6 +74,120 @@ label[for="audio-input"].disabled {
 .section.projects.loaded .loading-state{
   display: none;
 }
+
+/* ============================================
+   TOAST NOTIFICATION STYLES
+   ============================================ */
+
+/* Toast Container */
+.toast-container {
+  position: fixed;
+  top: var(--space-lg);
+  right: var(--space-md);
+  z-index: var(--z-tooltip);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  pointer-events: none;
+  max-width: 400px;
+  width: 100%;
+}
+
+/* Individual Toast */
+.toast {
+  pointer-events: auto;
+  display: flex;
+  width: 59%;
+  max-width: 220px;
+  position: absolute;
+  top: 45px;
+  right: 1rem;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  line-height: var(--lh-normal);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-main);
+  animation: slideIn 0.3s var(--ease-out) forwards;
+  transition: all var(--duration-normal) var(--ease-standard);
+}
+
+/* Toast removing animation */
+.toast.removing {
+  animation: slideOut 0.3s var(--ease-in) forwards;
+}
+
+/* Toast Types */
+.toast.success {
+  background: var(--color-success-bg);
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.toast.error {
+  background: var(--color-error-bg);
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.toast.warning {
+  background: var(--color-warning-bg);
+  border-color: var(--color-warning);
+  color: var(--color-warning);
+}
+
+.toast.info {
+  background: rgba(224, 242, 254, 0.1); /* Using accent-2 color */
+  border-color: var(--color-accent-2);
+  color: var(--color-accent-2);
+}
+
+/* Toast Icon (if you want to add icons later) */
+.toast-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Toast Message */
+.toast-message {
+  flex: 1;
+  color: var(--text-main);
+}
+
+/* Animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+
 
 /* ============================================
 FLEXBOX

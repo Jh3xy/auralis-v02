@@ -1,6 +1,10 @@
 
 // utils.js
 
+/**=====================
+ *    DOM UTILITIES
+ * ======================
+ */
 
 // toggle active class on elements
 function toggleClass(element, className, callback) {
@@ -26,8 +30,6 @@ function toggleClass(element, className, callback) {
 
 }
 
-
-// TODO: Write function to grab username from onboarding phase and set in localStorage 
 function createInitials(username) {
   if (!username || typeof username !== 'string') {
     console.warn('Invalid username provided to createInitials');
@@ -101,53 +103,12 @@ function createInitials(username) {
 }
 
 
-// Format time for speak diarization print in UI 
-function formatTime(ms) {
-  const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  // This ensures we get "01:05" instead of "1:5"
-  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-}
 
-
-/**
- * Converts a timestamp (like Date.now()) to formatted date string
- * @param {number} timestamp - Unix timestamp in milliseconds
- * @param {boolean} useMonthName - If true, uses month name (e.g., "Feb"), if false uses number (e.g., "02")
- * @returns {string} Formatted date string
+/**=====================
+ *    DATE UTILITIES
+ * ======================
  */
-function formatDate(timestamp, useMonthName = false) {
-  const date = new Date(timestamp);
-  
-  const month = date.getMonth() + 1; // 0-indexed, so add 1
-  const day = date.getDate();
-  const year = date.getFullYear().toString().slice(-2); // Last 2 digits
-  
-  if (useMonthName) {
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return `${monthNames[date.getMonth()]} ${day}, ${year}`;
-  }
-  
-  // Numeric format with leading zeros
-  const monthStr = month.toString().padStart(2, '0');
-  const dayStr = day.toString().padStart(2, '0');
-  
-  return `${monthStr} ${dayStr}, ${year}`;
-}
 
-
-// Additional date formatting functions for different contexts (e.g., full date, relative time)
-
-/**
- * Get current date formatted
- * @param {boolean} useMonthName - If true, uses month name
- * @returns {string} Current date formatted
- */
-function getCurrentDate(useMonthName = false) {
-  return formatDate(Date.now(), useMonthName);
-}
 
 /**
  * Formats date in full format (e.g., "October 24, 2023")
@@ -163,21 +124,60 @@ function formatDateFull(timestamp) {
 }
 
 /**
- * Formats time in 12-hour format (e.g., "02:30 PM")
- * @param {number} timestamp - Unix timestamp
- * @returns {string} Formatted time
+ * Converts a timestamp (like Date.now()) to formatted date string
+ * @param {number} timestamp - Unix timestamp in milliseconds
+ * @param {boolean} useMonthName - If true, uses month name (e.g., "Feb"), if false uses number (e.g., "02")
+ * @returns {string} Formatted date string
  */
-// function formatTime(timestamp) {
-//   const date = new Date(timestamp);
-//   let hours = date.getHours();
-//   const minutes = date.getMinutes().toString().padStart(2, '0');
-//   const ampm = hours >= 12 ? 'PM' : 'AM';
+function formatDate(timestamp, useMonthName = false) {
+  const date = new Date(timestamp);
   
-//   hours = hours % 12;
-//   hours = hours ? hours : 12; // If 0, make it 12
+  const month = date.getMonth() + 1; // 0-indexed, so add 1
+  const day = date.getDate();
+  const year = date.getFullYear().toString() // 4 digits (e.g 2026)
+  // const year = date.getFullYear().toString().slice(-2); // Last 2 digits (e.g 26 - for 2026)
   
-//   return `${hours}:${minutes} ${ampm}`;
-// }
+  if (useMonthName) {
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${monthNames[date.getMonth()]} ${day}, ${year}`;
+  }
+  
+  // Numeric format with leading zeros
+  const monthStr = month.toString().padStart(2, '0');
+  const dayStr = day.toString().padStart(2, '0');
+  
+  return `${monthStr} ${dayStr}, ${year}`;
+}
+
+/**
+ * Get current date formatted
+ * @param {boolean} useMonthName - If true, uses month name
+ * @returns {string} Current date formatted
+ */
+function getCurrentDate(useMonthName = false) {
+  return formatDate(Date.now(), useMonthName);
+}
+
+
+
+
+
+/**=====================
+ *    TIME UTILITIES
+ * ======================
+ */
+
+
+// Format time for speak diarization print in UI 
+function formatTime(ms) {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  // This ensures we get "01:05" instead of "1:5"
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+}
+
 
 /**
  * Get relative time (e.g., "Just now", "2 mins ago", "3 hours ago")
@@ -195,6 +195,8 @@ function getRelativeTime(timestamp) {
   
   if (seconds < 60) return 'Just now';
   if (minutes < 60) return `${minutes} min${minutes > 1 ? 's' : ''} ago`;
+  // !COPY from this min${minutes > 1 ? 's' : ''} ago` when seetting speaker count feature in span.speakers
+
   if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
   if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`;
   

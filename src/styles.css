@@ -213,6 +213,10 @@ header .menu-btn{
 .nav-primary{
   flex: 1;
 }
+.navbar-secondary .user{
+  position: absolute;
+  top: 0;
+}
 .nav-link{
   color: var(--text-muted);
 }

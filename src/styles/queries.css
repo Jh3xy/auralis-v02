@@ -242,6 +242,7 @@
     -webkit-backdrop-filter: blur(12px);
     border-radius: var(--radius-full);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    align-self: flex-end;
   }
   
   /* Export button - floating at bottom right */
@@ -267,6 +268,18 @@
   }
   .edit-controls .edit-btn{
     display: block;
+  }
+
+  .toast-container {
+    top: var(--space-md);
+    right: var(--space-sm);
+    left: var(--space-sm);
+    max-width: none;
+  }
+  
+  .toast {
+    padding: var(--space-sm);
+    font-size: var(--fs-xs);
   }
 }
 
