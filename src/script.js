@@ -188,6 +188,7 @@ async function handleTranscription() {
                   <div class="edit-controls flex gap-2"><button class="edit-btn btn"><i data-lucide="square-pen"></i></button><div class="controls-secondary flex gap-1"><buttons class="save-btn btn"><i data-lucide="save"></i></buttons><buttons class="cancel-btn btn"><i data-lucide="ban"></i></buttons></div></div></div><p class="speaker-text">${wordsHTML}</p></div>
       `
       transcriptEditor.insertAdjacentHTML('beforeend', speakerBox);
+      lucide.createIcons();
 
       // TODO: Attach event listners for editing .speaker-text
     });
