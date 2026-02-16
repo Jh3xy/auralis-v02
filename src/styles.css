@@ -693,8 +693,8 @@ header .menu-btn{
 }
 .loading-header [data-lucide] {
   color: var(--color-accent-1);
-  width: 24px;
-  height: 32px;
+  width: 52px;
+  height: 52px;
 }
 .loading-header h2 {
   font-weight: var(--fw-medium);
@@ -704,7 +704,7 @@ header .menu-btn{
 }
 .loading-desc{
   opacity: 0.4;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   line-height: 1.25rem;
 }
 .loading-progress .progress-bar{
@@ -752,16 +752,15 @@ header .menu-btn{
   color: var(--text-muted);
   /* margin-bottom: ; */
 }
-.loading-metrics .metric{
+.loading-metrics .upload-metric{
   font-family: var(--ff-secondary);
-  color: var(--text-main);
   align-self: flex-start;
   opacity: 0.86;
-  font-size: 0.875rem;
+  font-size: 0.735rem;
   line-height: 1.25rem;
 }
 .upload-status .state{
-  font-size: 0.875rem;
+  font-size: 0.735rem;
   line-height: 1.25rem;
   color: var(--color-accent-1);
   position: relative;
