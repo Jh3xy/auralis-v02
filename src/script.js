@@ -180,7 +180,9 @@ async function handleTranscription() {
     updateState(projectSection, 'loading');
     projectTab.click();
 
-    const transcriptText = await uploadAndTranscribe(uploadType, uploadData);
+    const result = await uploadAndTranscribe(uploadType, uploadData);
+
+    window.transcriptResult = result; // Expose result for debugging
     
     const elapsed = Date.now() - start;
     if (elapsed < MIN_DISPLAY_TIME) {
@@ -188,8 +190,8 @@ async function handleTranscription() {
     }
 
     transcriptEditor.innerHTML = ''; 
-    transcriptLanguage.innerText = `${transcriptText.language_code}`;
-    utterances = transcriptText.utterances;
+    transcriptLanguage.innerText = `${result.language_code}`;
+    utterances = result.utterances;
 
     utterances.forEach((utterance) => {
       const startTime = formatTime(utterance.start);
@@ -291,6 +293,7 @@ audioRange.addEventListener('input', () => {
 
 audioInput.addEventListener('change', () => {
   if (audioInput.files && audioInput.files[0]) {
+    
     setTimeout(() => {
       handleTranscription();
     }, 2000);
