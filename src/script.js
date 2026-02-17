@@ -28,6 +28,10 @@ window.createInitials = createInitials
 let utterances;
 window.utterances = utterances;
 
+
+let originalTranscript = null // Will store original transcript result
+let editableTranscript = null // Will store editable transcript result
+
 // Function that sets UI states
 function updateState(element, state) {
   const states = ['loading', 'loaded'];
@@ -90,50 +94,65 @@ function showToast(msg, type = 'info', duration = 3000) {
  * @param {Array} transcriptData - The editableTranscript array containing the transcript data to render
 */
 const transcriptEditor = document.querySelector('.transcript-body');
+let editingIndex = null; //for tracking current editing block
 
 function renderTranscript(array) {
-  // Clear editor
-  transcriptEditor.innerHTML = ''; 
-
-
-  // Loop through arr to genrate DOM
-
-  // Check if param is an array 
+  transcriptEditor.innerHTML = '';
   if (!Array.isArray(array)) {
-    console.warn('renderTranscript expects an array');
-    return;
+    console.log(`${array} is not an array`);
+    return
   }
 
   array.forEach(
     (utterance, index)=> {
-      // create the speaker blocks
-      const startTime = formatTime(utterance.start);
-      const endTime = formatTime(utterance.end);
+      let contentHTML = ''; //Initialize what content should be (textarea or span) based on editingIndex === index
+      const startTime = formatTime(utterance.start)
+      const endTime = formatTime(utterance.end)
+      
+      // Check if editing index is eqaul to index to change contentHTML
+      if (editingIndex === index) {
+        const textvalue = utterance.words.map(
+          (word)=> {
+            return `${word.text}`;
+          }
+        ).join(' ');
+        contentHTML = `<textarea class="edit-textarea">${textvalue}</textarea>`
+        console.log(contentHTML)
+      } else {
+        contentHTML = utterance.words.map(
+          (word)=> {
+            return `<span data-start="${word.start}" data-end="${word.end}">${word.text}</span>`
+          }
+        ).join(' ');
+      }
 
-      // Divide the word by their spaces and then map into a new array to wrap them with span tags and data IDs
-      const wordHTML = utterance.words.map(word => {
-        return `<span data-start="${word.start}" data-end="${word.end}">
-                  ${word.text}
-                </span>`;
-      }).join(' ');
+      // Create dynamic speaker block now
       const speakerBox = `
-      <div class="speaker-box flex items-start gap-8" data-index="${index}">
+      <div class="speaker-box flex items-start gap-8 ${editingIndex === index ? 'is-editing': ''}" data-index="${index}">
         <div class="speaker-tag flex gap-1 shrink-0 flex-col">
           <span class="speaker">Speaker ${utterance.speaker}</span><span class="speaker-metadata sub-text"> ${startTime} - ${endTime}</span>
-              <div class="edit-controls flex gap-2"><button class="edit-btn btn"><i data-lucide="square-pen"></i></button><div class="controls-secondary flex gap-1"><button class="save-btn btn"><i data-lucide="save"></i></button><button class="cancel-btn btn"><i data-lucide="ban"></i></button></div></div></div><p class="speaker-text">${wordHTML}</p></div>
+              <div class="edit-controls flex gap-2"><button class="edit-btn btn"><i data-lucide="square-pen"></i></button><div class="controls-secondary flex gap-1"><button class="save-btn btn"><i data-lucide="save"></i></button><button class="cancel-btn btn"><i data-lucide="ban"></i></button></div></div></div><p class="speaker-text">${contentHTML}</p></div>
       `
       transcriptEditor.insertAdjacentHTML('beforeend', speakerBox);
-    });
-    // init edit control icons
+    }
+  )
+  console.log('Finished Rendering Transcript')
   lucide.createIcons();
+
+  // Use event delegation on parent to avoid multiple event listnes added
+  transcriptEditor.addEventListener("click", (e)=> {
+    const btn = e.target.closest('.edit-btn');
+    if (!btn) return; // Exit if they didn't click an edit button
+    console.log(btn);
+
+    const speakerbox = btn.closest('.speaker-box')
+
+    // Set editingIndex
+    editingIndex = Number(speakerbox.dataset.index); //Force with Number() to convert data-index to number
+    renderTranscript(editableTranscript);
+  })
 }
 
-
-
-
-
-// === TRANSCRIPTION FUNCTION
-// ============================================
 
 const audioInput = document.getElementById('audio-input');
 const urlInput = document.getElementById('url-audio-input');
@@ -145,9 +164,6 @@ const audioSize = document.querySelector('.audio-size');
 
 let currentAudioUrl = null; //To keep track of the current audio URL for cleanup
 const transcriptAudio = document.getElementById('audio-engine');
-
-let originalTranscript = null // Will store original transcript result
-let editableTranscript = null // Will store editable transcript result
 
 async function handleTranscription() {
   let uploadType, uploadData;
@@ -245,7 +261,7 @@ async function handleTranscription() {
 
     // The .map() HOF enables us to create our own version of the original transcript that we can manipulate and edit without affecting the original data from the API. This is important for maintaining data integrity and allowing users to revert changes if needed.
 
-    /**Shoudl produce something like this
+    /**Should produce something like this
      *[{
         speaker: "A",
         start: 800,
@@ -278,24 +294,7 @@ async function handleTranscription() {
     
     console.log(`originalTranscript:`, originalTranscript);
     console.log(`editableTranscript:`, editableTranscript);
-
-    // TODO: Will replace with rendering function to create the Ui from editableTranscript instead of original transcript for better performance when we add editing features
-    // utterances.forEach((utterance) => {
-    //   const startTime = formatTime(utterance.start);
-    //   const endTime = formatTime(utterance.end);
-    //   const wordsHTML = utterance.text.split(' ').map(word => `<span>${word} </span>`).join('');
-
-    //   const speakerBox = `
-    //       <div class="speaker-box flex items-start gap-8">
-    //         <div class="speaker-tag flex gap-1 shrink-0 flex-col">
-    //           <span class="speaker">Speaker ${utterance.speaker}</span><span class="speaker-metadata sub-text"> ${startTime} - ${endTime}</span>
-    //               <div class="edit-controls flex gap-2"><button class="edit-btn btn"><i data-lucide="square-pen"></i></button><div class="controls-secondary flex gap-1"><buttons class="save-btn btn"><i data-lucide="save"></i></buttons><buttons class="cancel-btn btn"><i data-lucide="ban"></i></buttons></div></div></div><p class="speaker-text">${wordsHTML}</p></div>
-    //   `
-    //   transcriptEditor.insertAdjacentHTML('beforeend', speakerBox);
-    //   lucide.createIcons();
-
-    //   // TODO: Attach event listners for editing .speaker-text
-    // });
+    
     renderTranscript(editableTranscript);
 
     updateState(projectSection, 'loaded');
@@ -381,7 +380,7 @@ audioRange.addEventListener('input', () => {
 
 audioInput.addEventListener('change', () => {
   if (audioInput.files && audioInput.files[0]) {
-    
+    label.innerText = 'Uploading...'
     setTimeout(() => {
       handleTranscription();
     }, 2000);
@@ -390,6 +389,7 @@ audioInput.addEventListener('change', () => {
 
 urlUploadBtn.addEventListener('click', () => {
   if (urlInput.value.trim()) {
+    urlUploadBtn.innerText = 'Uploading...'
     setTimeout(() => {
       handleTranscription();
     }, 2000);

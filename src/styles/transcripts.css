@@ -189,6 +189,7 @@ input[type="range"]::-moz-range-thumb {
 }
 .speaker-box {
   position: relative;
+  min-height: 90px;
   /* z-index: -1; */
 }
 .speaker-box:before{
@@ -221,6 +222,7 @@ input[type="range"]::-moz-range-thumb {
   line-height: 1.625;
   font-weight: var(--fw-light);
   font-size: var(--fs-base);
+  width: 100%;
 }
 .speaker-text .active-word{
   background-color: rgb(from var(--color-highlight) r g b / 0.3);
@@ -242,7 +244,10 @@ input[type="range"]::-moz-range-thumb {
   width: 15px;
   height: 15px;
 }
-
+.edit-controls .btn:hover{
+  color: var(--text-main);
+  opacity: 1;
+}
 .edit-controls .edit-btn,
 .edit-controls .controls-secondary{
   display: none;
@@ -257,5 +262,40 @@ input[type="range"]::-moz-range-thumb {
 .edit-controls.editing .controls-secondary{
   display: flex;
 }
+/* The Textarea Styling */
+.edit-textarea {
+  width: 100%;
+  min-height: 180px;
+  outline: none;
+  resize: none; /* Removes the drag handle */
+  background: rgba(0, 0, 0, 0.2); /* Slightly darker than the box */
+  border: 1px solid var(--audio-btn-primary); 
+  border-radius: 8px;
+  color: var(--text-main);
+  padding: 12px;
+  font-family: var(--ff-primary); /* Keeps font consistent */
+  font-size: var(--fs-sm);
+  line-height: 1.625;
+  transition: border-color 0.2s ease;
+}
 
+.edit-textarea:focus {
+  border-color: var(--color-indigo-light);
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1);
+}
 
+/* Handling Icon Visibility without JS toggles */
+/* By default, hide the secondary controls (Save/Cancel) */
+.speaker-box .controls-secondary {
+  display: none;
+}
+
+/* When the parent has the 'is-editing' class... */
+.speaker-box.is-editing .controls-secondary {
+  display: flex;
+}
+
+/* ...and hide the main Edit button */
+.speaker-box.is-editing .edit-btn {
+  display: none !important;
+}

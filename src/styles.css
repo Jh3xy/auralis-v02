@@ -720,7 +720,7 @@ header .menu-btn{
   background-color: var(--color-accent-1);
   box-shadow: 0 0 15px rgba(167, 243, 208, 0.4);
   animation: pulse-opacity 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  animation: slide 1.6s linear infinite;
+  animation: slide 700ms linear infinite;
 }
 @keyframes pulse-opacity {
   0%, 100% {

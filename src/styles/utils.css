@@ -105,11 +105,11 @@ label[for="audio-input"].disabled {
   right: 1rem;
   align-items: center;
   gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
+  padding: var(--space-xs) var(--space-sm);
   border-radius: var(--radius-md);
-  font-size: var(--fs-sm);
+  font-size: var(--fs-xs);
   font-weight: var(--fw-medium);
-  line-height: var(--lh-normal);
+  /* line-height: var(--lh-normal); */
   box-shadow: var(--shadow-lg);
   backdrop-filter: blur(10px);
   border: 1px solid var(--border-subtle);

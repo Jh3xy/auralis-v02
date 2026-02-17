@@ -269,6 +269,9 @@
   .edit-controls .edit-btn{
     display: block;
   }
+  .speaker-box.is-editing .edit-btn {
+    display: none;
+  }
   .toast-container {
     top: var(--space-md);
     right: var(--space-sm);
