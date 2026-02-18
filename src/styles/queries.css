@@ -266,12 +266,9 @@
   .speaker-text {
     font-size: var(--fs-sm);
   }
-  .edit-controls .edit-btn{
+  /* .edit-controls .edit-btn{
     display: block;
-  }
-  .speaker-box.is-editing .edit-btn {
-    display: none;
-  }
+  } */
   .toast-container {
     top: var(--space-md);
     right: var(--space-sm);
@@ -282,10 +279,21 @@
     padding: var(--space-sm);
     font-size: var(--fs-xs);
   }
-  
   .navbar-secondary .user {
     position: absolute;
     top: 0;
+  }
+  /* Show edit button always on mobile, no hover needed */
+  .speaker-box .edit-controls .edit-btn {
+    display: block;
+  }
+  /* When the parent has the 'is-editing' class... */
+  .speaker-box.is-editing .controls-secondary {
+    display: flex;
+  }
+  /* ...and hide the main Edit button */
+  .speaker-box.is-editing .edit-btn {
+    display: none !important;
   }
 }
 

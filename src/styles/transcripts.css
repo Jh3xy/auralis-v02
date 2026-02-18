@@ -284,6 +284,10 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1);
 }
 
+/* When any block is being edited, hide ALL edit buttons on ALL other blocks */
+.transcript-body.has-editing .speaker-box .edit-btn {
+  display: none !important;
+}
 /* Handling Icon Visibility without JS toggles */
 /* By default, hide the secondary controls (Save/Cancel) */
 .speaker-box .controls-secondary {
@@ -294,7 +298,6 @@ input[type="range"]::-moz-range-thumb {
 .speaker-box.is-editing .controls-secondary {
   display: flex;
 }
-
 /* ...and hide the main Edit button */
 .speaker-box.is-editing .edit-btn {
   display: none !important;

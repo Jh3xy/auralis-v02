@@ -1,9 +1,9 @@
-// IMPORTANT: Notes:
+// !IMPORTANT: Notes:
 // - Add a small delay (setTimeout) when switching states to allow CSS transitions to play for smoother UX
 // - Use small spinner button beside file name in loading state for better feedback and in buttons in loading dock
 
 
-// Stylesheets
+// Import Stylesheets
 import './styles/variables.css'
 import './styles/resets.css'
 import './styles.css'
@@ -23,16 +23,16 @@ import { toggleClass, createInitials, formatTime, formatDate  } from './js/utils
 import { uploadAndTranscribe } from "./js/transcribe";
 import { eventHub } from "./js/eventhub";
 
-window.createInitials = createInitials
 
 let utterances;
 window.utterances = utterances;
+window.createInitials = createInitials
 
 
-let originalTranscript = null // Will store original transcript result
-let editableTranscript = null // Will store editable transcript result
+let originalTranscript = null // store original transcript result - Full API response Object
+let editableTranscript = null // store editable transcript result - Array of utternaces from API result object
 
-// Function that sets UI states
+// Function to set UI states
 function updateState(element, state) {
   const states = ['loading', 'loaded'];
   element.classList.remove(...states)
@@ -41,11 +41,11 @@ function updateState(element, state) {
 
 
 // Wait promise for enforcng mimimum dispay time
-// This creates a "pause" that doesn't freeze the browser
+// This creates a "pause" that doesn't freeze the browser and ensures UI states are intentional
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Show toast Utility
-function showToast(msg, type = 'info', duration = 3000) {
+function showToast(msg, type = 'info', duration = 4500) {
   // Create or get toast container
   let container = document.querySelector('.toast-container');
   if (!container) {
@@ -69,7 +69,8 @@ function showToast(msg, type = 'info', duration = 3000) {
   // Append toast to container
   container.appendChild(toast);
   console.log(container)
-  // Auto-dismiss after duration
+
+  // Auto-dismiss after .removing animation duration in./styles/utils.js 
   setTimeout(() => {
     toast.classList.add('removing');
     // Remove from DOM after animation completes
@@ -86,30 +87,31 @@ function showToast(msg, type = 'info', duration = 3000) {
 }
 
 /**
- * Function to Render Transcript from editableTranscript() 
- * and can be called upon editing events to update the UI without needing to re-call the API or reset the audio player
- * It will:
+ * Function to Render Transcript from editableTranscript()
+ * It :
  *  Reads state,
  * Produces DOM
- * @param {Array} transcriptData - The editableTranscript array containing the transcript data to render
+ * @param {Array} transcriptData - The editableTranscript array containing the transcript (utternace) data to render
 */
 const transcriptEditor = document.querySelector('.transcript-body');
 let editingIndex = null; //for tracking current editing block
 
 function renderTranscript(array) {
+  // Todo: check if editor holds any transcripts - save audio & transcripts as draft in recordings section
   transcriptEditor.innerHTML = '';
+
+  // Confirm if param is an array
   if (!Array.isArray(array)) {
     console.log(`${array} is not an array`);
-    return
+    return;
   }
-
   array.forEach(
     (utterance, index)=> {
       let contentHTML = ''; //Initialize what content should be (textarea or span) based on editingIndex === index
       const startTime = formatTime(utterance.start)
       const endTime = formatTime(utterance.end)
       
-      // Check if editing index is eqaul to index to change contentHTML
+      // Check if editing index is equal to index to change contentHTML
       if (editingIndex === index) {
         const textvalue = utterance.words.map(
           (word)=> {
@@ -126,32 +128,76 @@ function renderTranscript(array) {
         ).join(' ');
       }
 
-      // Create dynamic speaker block now
+      // Then Create dynamic speaker block now to use contentHTML
       const speakerBox = `
-      <div class="speaker-box flex items-start gap-8 ${editingIndex === index ? 'is-editing': ''}" data-index="${index}">
-        <div class="speaker-tag flex gap-1 shrink-0 flex-col">
-          <span class="speaker">Speaker ${utterance.speaker}</span><span class="speaker-metadata sub-text"> ${startTime} - ${endTime}</span>
-              <div class="edit-controls flex gap-2"><button class="edit-btn btn"><i data-lucide="square-pen"></i></button><div class="controls-secondary flex gap-1"><button class="save-btn btn"><i data-lucide="save"></i></button><button class="cancel-btn btn"><i data-lucide="ban"></i></button></div></div></div><p class="speaker-text">${contentHTML}</p></div>
+        <div class="speaker-box flex items-start gap-8 ${editingIndex === index ? 'is-editing': ''}" data-index="${index}">
+          <div class="speaker-tag flex gap-1 shrink-0 flex-col">
+            <span class="speaker">Speaker ${utterance.speaker}</span>
+            <span class="speaker-metadata sub-text"> ${startTime} - ${endTime}</span>
+              <div class="edit-controls flex gap-2">
+                <button class="edit-btn btn"><i data-lucide="square-pen"></i></button>
+                <div class="controls-secondary flex gap-1">
+                <button class="save-btn btn"><i data-lucide="save"></i></button>
+                <button class="cancel-btn btn"><i data-lucide="ban"></i></button>
+                </div>
+              </div>
+            </div>
+          <p class="speaker-text">${contentHTML}</p>
+        </div>
       `
+      // Insert each block before end
       transcriptEditor.insertAdjacentHTML('beforeend', speakerBox);
     }
   )
   console.log('Finished Rendering Transcript')
-  lucide.createIcons();
+  lucide.createIcons(); //Re-init .edit-controls icons
+};
 
-  // Use event delegation on parent to avoid multiple event listnes added
-  transcriptEditor.addEventListener("click", (e)=> {
-    const btn = e.target.closest('.edit-btn');
-    if (!btn) return; // Exit if they didn't click an edit button
-    console.log(btn);
+// TODO: function to pick the speakerblock[index], update state and editableTranscript 
+function updateTranscriptState(index) {
+  // find element with data-index ="${index}"
+  const speakerBox = document.querySelectorAll('.speaker-box')
+  const currentSpeakerBlock = document.querySelector(`[data-index="${index}"]`)
+  const currentSpeakerText = currentSpeakerBlock.querySelector('.speaker-text')
+  speakerBox.forEach(box => {
+    box.classList.remove('is-editing');
+  });
+  currentSpeakerBlock.classList.add('is-editing');
+  console.log(speakerBox)
+  console.log(currentSpeakerBlock)
+  console.log(currentSpeakerText)
 
-    const speakerbox = btn.closest('.speaker-box')
+  // Mark the transcript body so ALL edit buttons get hidden globally
+  transcriptEditor.classList.add('has-editing');
 
-    // Set editingIndex
-    editingIndex = Number(speakerbox.dataset.index); //Force with Number() to convert data-index to number
-    renderTranscript(editableTranscript);
-  })
+  // update text in editableTranscript directly
+  console.log(editableTranscript[index].words)
+  const textContent = editableTranscript[index].words.map(
+    (word)=> {
+      return word.text
+    }
+  ).join(' ');
+  console.log(editableTranscript[index])
+  console.log(textContent)
+  // insert textarea into currentSpeakerBlock
+  const textarea = `<textarea class="edit-textarea">${textContent}</textarea>`;
+  currentSpeakerText.innerHTML = textarea;
 }
+
+// Use event delegation on parent to avoid multiple event listners added
+transcriptEditor.addEventListener("click", (e)=> {
+  // grab clicked btn
+  const editbtn = e.target.closest('.edit-btn');
+  if (!editbtn) {
+    return; 
+  }
+  const speakerbox = editbtn.closest('.speaker-box');
+  let index = Number(speakerbox.dataset.index); //Force data type of data-index in speakerbox to be number
+  console.log(editbtn, speakerbox, index);
+  editingIndex = index;
+  // Update state of the target speaker block
+  updateTranscriptState(editingIndex);
+})
 
 
 const audioInput = document.getElementById('audio-input');
@@ -165,7 +211,9 @@ const audioSize = document.querySelector('.audio-size');
 let currentAudioUrl = null; //To keep track of the current audio URL for cleanup
 const transcriptAudio = document.getElementById('audio-engine');
 
+
 async function handleTranscription() {
+  // TIP: this function is async it awaits result from uploadAndTranscribe() in ./js/transcribe.js
   let uploadType, uploadData;
 
   // Revoke any other previous audio urls to free memory
@@ -177,7 +225,7 @@ async function handleTranscription() {
   // UI CLEANUP: Reset the play button and slider
   resetAudioUI();
   
-  // Use the global variables instead of re-fetching them
+  // Use uploadType || uploadData variables instead of re-fetching them
   if (audioInput.files && audioInput.files[0]) {
     uploadType = 'file';
     uploadData = audioInput.files[0];
@@ -189,9 +237,7 @@ async function handleTranscription() {
     }
     
     // Update Audio player in transcript
-
-    // create a new src for audio element
-    const src = URL.createObjectURL(uploadData);
+    const src = URL.createObjectURL(uploadData); // create a new src for audio element
     currentAudioUrl = src;  
     // set transcriptAudio src to src varibale and load
     transcriptAudio.src = src;
@@ -211,6 +257,7 @@ async function handleTranscription() {
     transcriptAudio.src = uploadData;
     transcriptAudio.load();
   } else {
+    // todo: show toast (type="info")
     urlDesc.innerHTML = 'Please select a file or enter a <span class="highlight">URL</span>';
     return;
   }
@@ -220,10 +267,10 @@ async function handleTranscription() {
 
   try {
     // LOCK UI immediately
-    toggleClass(label, 'disabled');
-    toggleClass(urlUploadBtn, 'disabled');
-    label.innerText = 'Uploading...';
-    urlUploadBtn.innerText = 'Uploading...';
+    // toggleClass(label, 'disabled');
+    // toggleClass(urlUploadBtn, 'disabled');
+    // label.innerText = 'Uploading...';
+    // urlUploadBtn.innerText = 'Uploading...';
 
 
     const projectSection = document.getElementById('projects');
@@ -315,11 +362,11 @@ async function handleTranscription() {
     const transcriptTab = document.querySelector('.nav-link[data-id="transcription"]');
     transcriptTab.click();
   } finally {
-    // 2. UNLOCK UI here 
-    // label.classList.remove('disabled');
-    // urlUploadBtn.classList.remove('disabled');
-    toggleClass(label, 'disabled');
-    toggleClass(urlUploadBtn, 'disabled');
+    // UNLOCK UI here 
+    label.classList.remove('disabled');
+    urlUploadBtn.classList.remove('disabled');
+    // toggleClass(label, 'disabled');
+    // toggleClass(urlUploadBtn, 'disabled');
     label.innerText = 'Upload Audio';
     urlUploadBtn.innerText = 'Upload Audio';
     audioInput.value = '';
@@ -381,6 +428,8 @@ audioRange.addEventListener('input', () => {
 audioInput.addEventListener('change', () => {
   if (audioInput.files && audioInput.files[0]) {
     label.innerText = 'Uploading...'
+    // toggleClass(label, '.disabled')
+    label.classList.remove('disabled');
     setTimeout(() => {
       handleTranscription();
     }, 2000);
@@ -389,7 +438,9 @@ audioInput.addEventListener('change', () => {
 
 urlUploadBtn.addEventListener('click', () => {
   if (urlInput.value.trim()) {
+    urlUploadBtn.classList.remove('disabled');
     urlUploadBtn.innerText = 'Uploading...'
+    // toggleClass(urlUploadBtn, '.disabled')
     setTimeout(() => {
       handleTranscription();
     }, 2000);
