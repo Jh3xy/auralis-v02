@@ -57,9 +57,8 @@
         <nav class="navbar">
           <div class="logo-wrap">
             <div class="logo">
-              <svg fill='none' viewBox='0 0 48 48' xmlns='http://www.w3.org/2000/svg' width="38" height="38" aria-label="Auralis Logo">
-                <path clip-rule='evenodd' d='M24 18.4228L42 11.475V34.3663C42 34.7796 41.7457 35.1504 41.3601 35.2992L24 42V18.4228Z' fill='currentColor'/>
-                <path clip-rule='evenodd' d='M24 8.18819L33.4123 11.574L24 15.2071L14.5877 11.574L24 8.18819ZM9 15.8487L21 20.4805V37.6263L9 32.9945V15.8487ZM27 37.6263V20.4805L39 15.8487V32.9945L27 37.6263ZM25.354 2.29885C24.4788 1.98402 23.5212 1.98402 22.646 2.29885L4.98454 8.65208C3.7939 9.08038 3 10.2097 3 11.475V34.3663C3 36.0196 4.01719 37.5026 5.55962 38.098L22.9197 44.7987C23.6149 45.0671 24.3851 45.0671 25.0803 44.7987L42.4404 38.098C43.9828 37.5026 45 36.0196 45 34.3663V11.475C45 10.2097 44.2061 9.08038 43.0155 8.65208L25.354 2.29885Z' fill='currentColor'/>
+              <svg class="" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 0L12.5 7.5L20 10L12.5 12.5L10 20L7.5 12.5L0 10L7.5 7.5L10 0Z"/>
               </svg>
             </div>
             <h2>Auralis</h2>
@@ -211,8 +210,8 @@
                   Real-time multi-speaker identification and interactive transcripts that follow the rhythm of your voice.
                 </p>
                 <div class="cta-btns">
-                  <button class="cta-main" onclick="goToStep(4)">Next</button>
                   <button class="cta-main cta-alt" onclick="goToStep(2)">Back</button>
+                  <button class="cta-main" onclick="goToStep(4)">Next</button>
                 </div>
                 <div class="features-tag">
                   <div class="feature">
@@ -420,22 +419,22 @@
           <div class="loading-state">
             <div class="loading-header flex-col-center gap-2">
               <i data-lucide="audio-lines"></i>
-              <h2>Processing Audio</h2>
-              <p class="loading-desc">Analyzing frequencies and identifying speakers <br> <span class="highlight">Please do not refresh!</span> </p>
+              <h2>Processing Audio <span class="highlight">Please do not refresh!</span> </h2>
+              <p class="loading-desc">Analyzing frequencies and identifying speakers</p>
             </div>
             <div class="loading-progress">
               <div class="progress-bar">
                 <div id="upload-progress-bar"></div>
               </div>
               <div class="upload-details flex-between">
-                <div class="file loading-sub-text">Architectural_Review_01.wav</div>
+                <div class="file loading-sub-text">-----</div>
                 <div class="percentage loading-sub-text">0%</div>
               </div>
             </div>
             <div class="loading-metrics flex-between">
               <div class="upload-size flex-col-center">
                 <span class="loading-sub-text">Uploading</span>
-                <span class="upload-metric metric">20/60MB</span>
+                <span class="upload-metric metric">0/60MB</span>
               </div>
               <div class="upload-status flex-col-center">
                 <span class="loading-sub-text">Status</span>
@@ -448,6 +447,7 @@
           <div class="transcript-state">
             <!-- TODO: adding custom Audio player here -->
              <div class="audio-player flex-between">
+              <span class="disabled-desc">Audio player does not support links</span>
               <audio src="" id="audio-engine"></audio>
               <div class="audio-wrapper">
                 <div class="controls flex-between gap-4">
@@ -463,9 +463,9 @@
                 </div>
                 <div class="audio flex-col flex-1">
                   <div class="flex-between items-center audio-data">
-                    <span class="current-time">01:45</span>
-                    <span class="audio-name">Architectural Audio Review.mp3</span>
-                    <span class="total-time">05:00</span>
+                    <span class="current-time">--:--</span>
+                    <span class="audio-name">-----</span>
+                    <span class="total-time">--:--</span>
                   </div>
                   <input type="range" name="audio" id="audio-range" min="0" max="100" value="0">
                 </div>

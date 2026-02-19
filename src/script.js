@@ -12,10 +12,10 @@ import './styles/onboarding.css'
 import './styles/transcripts.css'
 import './styles/queries.css'
 
-console.log('Vite is Running Script!');
 const APP_VERSION = 'v1.5-1.00';
 const plan = document.querySelector('.plan');
 plan.innerText = `Beta - ${APP_VERSION}`
+console.log('Vite is Running Script!');
 console.log(`Auralis ${APP_VERSION}`)
 
 // Import JS files here
@@ -299,6 +299,8 @@ const transcriptAudio = document.getElementById('audio-engine');
 async function handleTranscription() {
   // TIP: this function is async it awaits result from uploadAndTranscribe() in ./js/transcribe.js
   let uploadType, uploadData;
+  const audioplayer = document.querySelector('.audio-player');
+  const uploadmetirc = document.querySelector('.upload-metric');
 
   // Revoke any other previous audio urls to free memory
   if (currentAudioUrl) {
@@ -315,10 +317,15 @@ async function handleTranscription() {
     uploadData = audioInput.files[0];
     const sizeInMB = uploadData.size / (1024 * 1024);
     audioSize.innerText = `${sizeInMB.toFixed(2)} MB`;
+    uploadmetirc.innerText = `0 / ${sizeInMB.toFixed(2)} MB`;
+    // !IMPORTANT: replace 0 in uploadmetirc with actual file size uploaded
+    
     if (sizeInMB >= 500) {
       alert('File too large. Maximum size is 500MB.');
       return;
     }
+    
+    audioplayer.classList.remove('is-disabled');
     
     // Update Audio player in transcript
     const src = URL.createObjectURL(uploadData); // create a new src for audio element
@@ -326,17 +333,20 @@ async function handleTranscription() {
     // set transcriptAudio src to src varibale and load
     transcriptAudio.src = src;
     transcriptAudio.load()
-
-
+    
+    
   } else if (urlInput.value.trim()) {
     uploadType = 'url';
     uploadData = urlInput.value.trim();
-
+    
     
     if (!uploadData.startsWith('http://') && !uploadData.startsWith('https://')) {
       urlDesc.innerHTML = 'Please enter a valid URL starting with <span class="highlight">http://</span> or <span class="highlight">https://</span>';
       return;
     }
+    
+    audioplayer.classList.add('is-disabled');
+    uploadmetirc.innerText = `-- / --`;
 
     transcriptAudio.src = uploadData;
     transcriptAudio.load();
@@ -367,7 +377,7 @@ async function handleTranscription() {
     const speakerCount = document.querySelector('.speakers');
 
     // UI Prep
-    transcriptTitle.innerText = `${uploadType === 'file' ? uploadData.name : uploadData}...`;
+    transcriptTitle.innerText = `${uploadType === 'file' ? uploadData.name : uploadData}`;
     audioName.innerText = `${uploadType === 'file' ? uploadData.name : uploadData}...`;
     transcriptDate.innerText = formatDate(Date.now(), true);
     uploadStatus.innerText = 'Active';
@@ -447,8 +457,10 @@ async function handleTranscription() {
     transcriptTab.click();
   } finally {
     // UNLOCK UI here 
-    label.classList.remove('disabled');
-    urlUploadBtn.classList.remove('disabled');
+    // label.classList.remove('disabled');
+    label.classList.remove('is-disabled');
+    // urlUploadBtn.classList.remove('disabled');
+    urlUploadBtn.classList.remove('is-disabled');
     // toggleClass(label, 'disabled');
     // toggleClass(urlUploadBtn, 'disabled');
     label.innerText = 'Upload Audio';
@@ -513,7 +525,8 @@ audioInput.addEventListener('change', () => {
   if (audioInput.files && audioInput.files[0]) {
     label.innerText = 'Uploading...'
     // toggleClass(label, '.disabled')
-    label.classList.remove('disabled');
+    // label.classList.remove('disabled');
+    label.classList.add('is-disabled');
     setTimeout(() => {
       handleTranscription();
     }, 2000);
@@ -522,8 +535,9 @@ audioInput.addEventListener('change', () => {
 
 urlUploadBtn.addEventListener('click', () => {
   if (urlInput.value.trim()) {
-    urlUploadBtn.classList.remove('disabled');
+    // urlUploadBtn.classList.remove('disabled');
     urlUploadBtn.innerText = 'Uploading...'
+    urlUploadBtn.classList.add('is-disabled')
     // toggleClass(urlUploadBtn, '.disabled')
     setTimeout(() => {
       handleTranscription();

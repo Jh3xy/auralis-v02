@@ -41,6 +41,14 @@ label[for="audio-input"].disabled {
   pointer-events: none;  
   filter: grayscale(1); 
 }
+.url-upload-btn.is-disabled,
+.url-upload-btn:is-disabled, /* Targets the actual attribute */
+label[for="audio-input"].is-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+  user-select: none;  
+  filter: saturate(0.5) brightness(0.8);
+}
 
 
 /* Projects Section - Empty state */
@@ -188,6 +196,39 @@ label[for="audio-input"].disabled {
   }
 }
 
+
+.audio-player.is-disabled {
+  cursor: not-allowed;
+}
+.audio-player.is-disabled > *:not(.export-btn) {
+  opacity: 0.6;
+  pointer-events: none;
+  user-select: none;  
+  filter: saturate(0.5) brightness(0.8);
+}
+/* 3. Ensure the export button stays fully functional and visible */
+.audio-player.is-disabled .export-btn {
+  cursor: pointer;
+  opacity: 1;
+  filter: none;
+  pointer-events: auto;
+  background-color: var(--text-main);
+  filter: saturate(1) brightness(1);
+}
+.audio-player .disabled-desc {
+  display: none;
+}
+.audio-player.is-disabled .disabled-desc {
+  position: absolute;
+  display: block;
+  font-size: 10px;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  backdrop-filter: blur(12px);
+  background: hsla(240, 20%, 19%, 1);
+  color: var(--text-main);
+}
 
 
 /* ============================================

@@ -19,7 +19,7 @@ html.onboarded #main-app{
   position: relative;
 }
 .banner header{
-  padding: 14px 32px;
+  padding: 14px 20px;
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
@@ -59,10 +59,11 @@ html.onboarded #main-app{
 }
 .progress-bars {
   display: flex;
+  justify-content: end;
   gap: 8px;
 }
 .bar {
-  width: 28px;
+  width: 16px;
   height: 4px;
   border-radius: var(--radius-full);
   background-color: var(--text-muted);
@@ -207,7 +208,7 @@ main .img-div{
 main h1{
   font-weight: var(--fw-bold);
   margin: 0 auto;
-  margin-top: 2rem;
+  margin-top: 3rem;
   max-width: 600px;
   font-size: var(--fs-2xl);
   /* letter-spacing: -1px; */
@@ -215,22 +216,23 @@ main h1{
 main p.banner-desc{
   color: var(--text-muted);
   font-family: var(--ff-secondary);
-  font-weight: var(--fw-regular);
-  font-size: var(--fs-sm);
-  max-width: 400px;
+  font-weight: var(--fw-light);
+  font-size: var(--fs-xs);
+  max-width: 520px;
   margin: 0 auto;
-  margin-top: 1.2rem;
+  margin-top: 1rem;
   line-height: var(--lh-tight);
 }
 main .cta-main{
-  background-color: var(--color-highlight);
   margin-top: 2rem;
+  padding: 1rem 2rem;
+  color: var(--text-inverse);
   font-weight: var(--fw-bold);
   font-size: var(--fs-base);
   border-radius: var(--radius-sm);
-  padding: 1rem 2rem;
   line-height: var(--lh-relaxed);
   transition: var(--transition-base);
+  background-color: var(--color-highlight);
 }
 .cta-main:hover{
   transform: scale(1.02);
