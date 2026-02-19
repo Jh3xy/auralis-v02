@@ -1,6 +1,6 @@
 // !IMPORTANT: Notes:
-// - Add a small delay (setTimeout) when switching states to allow CSS transitions to play for smoother UX
-// - Use small spinner button beside file name in loading state for better feedback and in buttons in loading dock
+// - Add a small delay (setTimeout) when switching states to allow state transitions for smoother UX
+// - (Optional) Use small spinner button beside file name in loading state for better feedback and in buttons in loading dock
 
 
 // Import Stylesheets
@@ -153,8 +153,13 @@ function renderTranscript(array) {
   lucide.createIcons(); //Re-init .edit-controls icons
 };
 
-// TODO: function to pick the speakerblock[index], update state and editableTranscript 
-function updateTranscriptState(index) {
+/**
+ * Function to update transcript state based on index and mode (editing or normal)
+ * - This is more efficient than calling renderTranscript() everytime
+ * @param {*} index 
+ * @param {*} mode 
+ */
+function updateTranscriptState(index, mode) {
   // find element with data-index ="${index}"
   const speakerBox = document.querySelectorAll('.speaker-box')
   const currentSpeakerBlock = document.querySelector(`[data-index="${index}"]`)
@@ -162,42 +167,121 @@ function updateTranscriptState(index) {
   speakerBox.forEach(box => {
     box.classList.remove('is-editing');
   });
-  currentSpeakerBlock.classList.add('is-editing');
-  console.log(speakerBox)
-  console.log(currentSpeakerBlock)
-  console.log(currentSpeakerText)
 
-  // Mark the transcript body so ALL edit buttons get hidden globally
-  transcriptEditor.classList.add('has-editing');
+  if (mode !== 'editing' && mode !== 'normal') {
+    console.warn(`Invalid mode: ${mode}`);
+    return;
+  }
 
-  // update text in editableTranscript directly
-  console.log(editableTranscript[index].words)
-  const textContent = editableTranscript[index].words.map(
-    (word)=> {
-      return word.text
-    }
-  ).join(' ');
-  console.log(editableTranscript[index])
-  console.log(textContent)
-  // insert textarea into currentSpeakerBlock
-  const textarea = `<textarea class="edit-textarea">${textContent}</textarea>`;
-  currentSpeakerText.innerHTML = textarea;
+  if (mode === 'editing') {
+    currentSpeakerBlock.classList.add('is-editing');
+    console.log(currentSpeakerBlock)
+    console.log(currentSpeakerText)
+    
+    // Mark the transcript body so ALL edit buttons get hidden globally
+    transcriptEditor.classList.add('has-editing');
+    // update text in editableTranscript directly
+    console.log(editableTranscript[index].words)
+    const textContent = editableTranscript[index].words.map(
+      (word)=> {
+        return word.text
+      }
+    ).join(' ');
+    console.log(editableTranscript[index])
+    console.log(textContent)
+    // insert textarea into currentSpeakerBlock
+    const textarea = `<textarea class="edit-textarea">${textContent}</textarea>`;
+    currentSpeakerText.innerHTML = textarea;
+  } else if (mode === 'normal') {
+    // Rebuild the specific block from editableTranscript data to reflect any changes
+    currentSpeakerBlock.classList.remove('is-editing');
+    transcriptEditor.classList.remove('has-editing');
+    const contentHTML = editableTranscript[index].words.map((wordData) => {
+      const start = wordData.start;
+      const end = wordData.end;
+      return `<span data-start="${start}" data-end="${end}">${wordData.text}</span>`
+    }).join(' ')
+    currentSpeakerText.innerHTML = contentHTML;
+  }
+  
+
+
 }
 
 // Use event delegation on parent to avoid multiple event listners added
 transcriptEditor.addEventListener("click", (e)=> {
-  // grab clicked btn
+  
+  // grab the btns that were clicked using closest
   const editbtn = e.target.closest('.edit-btn');
-  if (!editbtn) {
-    return; 
+  const savebtn = e.target.closest('.save-btn');
+  const cancelbtn = e.target.closest('.cancel-btn');
+  console.log(e.target)
+  
+  
+  // check which among the btnsare not null
+  if (editbtn) {
+    const speakerbox = editbtn.closest('.speaker-box');
+    //Force data type of data-index in speakerbox to be number if speakerbox exists
+    let index = speakerbox ? Number(speakerbox.dataset.index) : null; 
+    handleEdit(index);
+    console.log(editbtn);
+  } else if (savebtn) {
+    const speakerbox = savebtn.closest('.speaker-box');
+    let index = speakerbox ? Number(speakerbox.dataset.index) : null; 
+    handleSave(index);
+    console.log(savebtn)
+  } else if (cancelbtn) {
+    const speakerbox = cancelbtn.closest('.speaker-box');
+    let index = speakerbox ? Number(speakerbox.dataset.index) : null; 
+    cancelEdit(index)
+  } else {
+    console.warn("Clicked element not found")
   }
-  const speakerbox = editbtn.closest('.speaker-box');
-  let index = Number(speakerbox.dataset.index); //Force data type of data-index in speakerbox to be number
-  console.log(editbtn, speakerbox, index);
-  editingIndex = index;
-  // Update state of the target speaker block
-  updateTranscriptState(editingIndex);
 })
+
+// Function to handle edit of speaker box
+function handleEdit(index) {
+  // Update state of the target speaker block
+  editingIndex = index;
+  updateTranscriptState(editingIndex, 'editing');
+}
+
+// Function to handle save logic
+function handleSave(index) {
+  // Grab the current speakerblock and the textarea
+  const currentSpeakerBlock = document.querySelector(`[data-index="${index}"]`)
+  const textarea = currentSpeakerBlock.querySelector('textarea')
+  if (!textarea) console.warn('Textarea not found');
+
+  // use .value on textarea as it gets updated on every keystroke unlike innerText
+  const newText = textarea.value.trim().split(/\s+/); // split on any whitespace
+  console.log(newText);
+ 
+  const oldWords = editableTranscript[index].words;
+
+  // Reconcile: keep timing data where possible, null it out where the word is new
+   editableTranscript[index].words = newText.map((text, i) => {
+    if (oldWords[i]) {
+      // Word existed at this index - keep timing, just update the text
+      return { ...oldWords[i], text: text };
+    } else {
+      // Brand new word (user typed more than existed) - no timing data
+      return { text: text, start: null, end: null, speaker: oldWords[0]?.speaker || null, confidence: null };
+    }
+  });
+
+  // Reset edit state and re-render
+  editingIndex = null;
+  transcriptEditor.classList.remove('has-editing');
+  updateTranscriptState(index, 'normal');
+}
+
+// Function to handle cancel logic
+function cancelEdit(index) {
+  editingIndex = null;
+  transcriptEditor.classList.remove('has-editing');
+  updateTranscriptState(index, 'normal');
+}
 
 
 const audioInput = document.getElementById('audio-input');
