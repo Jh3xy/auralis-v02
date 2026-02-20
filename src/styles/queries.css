@@ -295,6 +295,9 @@
   .speaker-box.is-editing .edit-btn {
     display: none !important;
   }
+  .audio-player.is-disabled .disabled-desc{
+    display: none;
+  }
 }
 
 

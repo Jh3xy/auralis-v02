@@ -374,7 +374,7 @@
             <input type="file" accept="audio/*" name="audio" id="audio-input" class="audio-input">
 
             <div class="url-box">
-              <p class="url-desc">Some links may work and some may not</p>
+              <p class="url-desc">Use a publicly-accessible URL</p>
               <input type="url" name="audio" id="url-audio-input" class="url-audio-input" placeholder="https://example.com/audio.mp3" autocomplete="off">
               <button class="url-upload-btn dock-btn">Upload Audio</button>
             </div>
@@ -419,8 +419,8 @@
           <div class="loading-state">
             <div class="loading-header flex-col-center gap-2">
               <i data-lucide="audio-lines"></i>
-              <h2>Processing <span class="highlight">Please do not refresh!</span> </h2>
-              <p class="loading-desc">Analyzing frequencies and identifying speakers</p>
+              <h2>Processing - <span class="highlight">Please do not refresh!</span></h2>
+              <p class="loading-desc"> </p>
             </div>
             <div class="loading-progress">
               <div class="progress-bar">
@@ -447,7 +447,7 @@
           <div class="transcript-state">
             <!-- TODO: adding custom Audio player here -->
              <div class="audio-player flex-between">
-              <span class="disabled-desc">Audio player does not support links</span>
+              <span class="disabled-desc">Audio player does not support link uploads</span>
               <audio src="" id="audio-engine"></audio>
               <div class="audio-wrapper">
                 <div class="controls flex-between gap-4">
@@ -491,56 +491,6 @@
               </div>
             </div>
             <div class="transcript-body flex flex-col gap-10">
-              <!-- <div class="speaker-box flex items-start gap-8">
-                <div class="speaker-tag flex gap-1 shrink-0 flex-col">
-                  <span class="speaker">Speaker 1</span>
-                  <span class="speaker-metadata sub-text">00:00 - 00:45</span>
-
-                  <div class="edit-controls flex gap-2">
-                    <button class="edit-btn btn">
-                      <i data-lucide="square-pen"></i>
-                    </button>
-                    <div class="controls-secondary flex gap-1">
-                      <buttons class="save-btn btn">
-                        <i data-lucide="save"></i>
-                      </buttons>
-                      <buttons class="cancel-btn btn">
-                        <i data-lucide="ban"></i>
-                      </buttons>
-                    </div>
-                  </div>
-                </div>
-                <p class="speaker-text">
-                  Welcome to the <span class="active-word">architectural</span> audio review for the downtown project. Today we're going to dive deep into the spatial acoustics of the main atrium and how we can leverage the high ceilings for better sound diffusion.
-                </p>
-              </div>
-              <div class="speaker-box flex items-start gap-8">
-                <div class="speaker-tag flex gap-1 shrink-0 flex-col">
-                  <span class="speaker">Speaker 2</span>
-                  <span class="speaker-metadata sub-text">00:45 - 01:20</span>
-                </div>
-                <p class="speaker-text">
-                  Thanks, I've been looking at the Revit models. One of the main concerns is the glass facade on the north side. We might need some perforated acoustic panels to prevent that "flutter echo" we talked about last week.
-                </p>
-              </div>
-              <div class="speaker-box flex items-start gap-8">
-                <div class="speaker-tag flex gap-1 shrink-0 flex-col">
-                  <span class="speaker">Speaker 1</span>
-                  <span class="speaker-metadata sub-text">01:20 - 02:30</span>
-                </div>
-                <p class="speaker-text">
-                  That makes sense. If we use the timber slats for the ceiling, we can hide the absorption material behind them. It maintains the minimalist aesthetic while solving the reverb issue. What do you think about the placement of the ambient mics?
-                </p>
-              </div>
-              <div class="speaker-box flex items-start gap-8">
-                <div class="speaker-tag flex gap-1 shrink-0 flex-col">
-                  <span class="speaker">Speaker 2</span>
-                  <span class="speaker-metadata sub-text">01:20 - 02:30</span>
-                </div>
-                <p class="speaker-text">
-                  I think placing them at the second-floor mezzanine level would give us the best representation of the room's character. We should also consider the low-frequency build-up in the corners.
-                </p>
-              </div> -->
             </div>
           </div>
         </section>

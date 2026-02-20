@@ -202,9 +202,15 @@ function getRelativeTime(timestamp) {
  * ======================
  */
 
-function saveToLocalStorage(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
-  console.log(`${key} saved to localStorage:`, value);
+function saveToLocalStorage(key, value, callback) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+    console.log(`${key} saved to localStorage`);
+  } catch (e) {
+    if (callback && typeof callback === 'function') {
+      callback(`Failed to save ${key} to localStorage`, 'error');
+    }
+  }
 }
 
 

@@ -34,8 +34,35 @@ window.createInitials = createInitials
 let session = null
 let originalTranscript = null // store original transcript result - Full API response Object
 let editableTranscript = null // store editable transcript result - Array of utternaces from API result object
+let hasClicked = false;
+let sizeInMB;
 
 const transcriptAudio = document.getElementById('audio-engine');
+
+// Restore transcripts, etc on load
+document.addEventListener('DOMContentLoaded', () => {
+  const savedData = localStorage.getItem(TRANSCRIPT_KEY);
+  if (!savedData) return;
+
+  const projectSection = document.getElementById('projects');
+  const savedSession = JSON.parse(savedData);
+
+  // Restore session and editableTranscript
+  session = savedSession;
+  editableTranscript = savedSession.utterances;
+
+  // Restore UI metadata
+  document.querySelector('.lang').innerText = session.language_code || '--';
+  document.querySelector('.transcript-title').innerText = session.title || 'Untitled';
+  document.querySelector('.audio-name').innerText = session.title || 'Untitled';
+  document.querySelector('.lang').innerText = session.language_code || '--';
+  document.querySelector('.audio-size').innerText = session.audio_size || '--';
+  // add whatever other metadata fields you want restored here
+
+  renderTranscript(editableTranscript);
+  updateState(projectSection, 'loaded');
+  showToast('Previous session restored', 'info');
+});
 
 
 // Function to set UI states
@@ -210,7 +237,12 @@ function updateTranscriptState(index, mode) {
   }
 }
 
-// Use event delegation on parent to avoid multiple event listners added
+
+/**
+ * Add eventlistners for edit, save and cancel button
+ * Use event delegation on parent to avoid multiple event listners added
+ */
+
 transcriptEditor.addEventListener("click", (e)=> {
   
   // grab the btns that were clicked using closest
@@ -222,12 +254,13 @@ transcriptEditor.addEventListener("click", (e)=> {
   
   // check which among the btnsare not null
   if (editbtn) {
-
-    // pause audio for editing
-    if (!transcriptAudio.paused) {
-      transcriptAudio.pause();
-      playBtn.innerHTML = `<i data-lucide="play"></i>`;
-      lucide.createIcons();
+    if (hasClicked) {
+     // pause audio for editing
+      if (!transcriptAudio.paused) {
+        transcriptAudio.pause();
+        playBtn.innerHTML = `<i data-lucide="play"></i>`;
+        lucide.createIcons();
+      }
     }
     const speakerbox = editbtn.closest('.speaker-box');
     //Force data type of data-index in speakerbox to be number if speakerbox exists
@@ -236,12 +269,16 @@ transcriptEditor.addEventListener("click", (e)=> {
     console.log(editbtn);
   } else if (savebtn) {
     
-    // play if paused for better UX after saving edits
-    if (transcriptAudio.paused) {
-      transcriptAudio.play();
-      playBtn.innerHTML = `<i data-lucide="pause"></i>`;
-      lucide.createIcons();
+    if (hasClicked) {
+      // play if paused for better UX after saving edits
+      if (transcriptAudio.paused) {
+        transcriptAudio.play();
+        playBtn.innerHTML = `<i data-lucide="pause"></i>`;
+        lucide.createIcons();
+      }
+      
     }
+    
     const speakerbox = savebtn.closest('.speaker-box');
     let index = speakerbox ? Number(speakerbox.dataset.index) : null; 
     handleSave(index);
@@ -249,12 +286,15 @@ transcriptEditor.addEventListener("click", (e)=> {
     console.log(savebtn)
   } else if (cancelbtn) {
     
-    // play if paused for better UX after saving edits
-    if (transcriptAudio.paused) {
-      transcriptAudio.play();
-      playBtn.innerHTML = `<i data-lucide="pause"></i>`;
-      lucide.createIcons();
+    if (hasClicked) {
+      // play if paused for better UX after saving edits
+      if (transcriptAudio.paused) {
+        transcriptAudio.play();
+        playBtn.innerHTML = `<i data-lucide="pause"></i>`;
+        lucide.createIcons();
+      }
     }
+
     const speakerbox = cancelbtn.closest('.speaker-box');
     let index = speakerbox ? Number(speakerbox.dataset.index) : null; 
     cancelEdit(index)
@@ -262,6 +302,7 @@ transcriptEditor.addEventListener("click", (e)=> {
     return;
   }
 })
+
 
 let lastSavedAt = null; // store auto-save timestamp globally
 
@@ -339,29 +380,59 @@ function cancelEdit(index) {
   updateTranscriptState(index, 'normal');
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const savedData = localStorage.getItem(TRANSCRIPT_KEY);
-  if (!savedData) return;
+let progressInterval = null; // global progress variable for fake loading progress
 
-  const projectSection = document.getElementById('projects');
-  const savedSession = JSON.parse(savedData);
+function startFakeProgress() {
+  const uploadMetric = document.querySelector('.upload-metric'); //
+  const percentage = document.querySelector('.percentage');
+  
+  // Stages: [target%, label, duration to reach it in ms]
+  const stages = [
+    { target: 12, label: 'Receiving your audio...', duration: 1500 },
+    { target: 35, label: 'Auralis is tuning in...', duration: 2000 },
+    { target: 55, label: 'Picking up the voices...', duration: 3000 },
+    { target: 72, label: 'Mapping the conversation...', duration: 4000 },
+    { target: 88, label: 'Putting words to speech...', duration: 5000 },
+    { target: 92, label: 'Transcript almost ready...', duration: 8000 },
+  ];
 
-  // Restore session and editableTranscript
-  session = savedSession;
-  editableTranscript = savedSession.utterances;
+  let current = 0;
+  let stageIndex = 0;
+  const loadingDesc = document.querySelector('.loading-desc');
 
-  // Restore UI metadata
-  document.querySelector('.lang').innerText = session.language_code || '--';
-  document.querySelector('.transcript-title').innerText = session.title || 'Untitled';
-  document.querySelector('.audio-name').innerText = session.title || 'Untitled';
-  document.querySelector('.lang').innerText = session.language_code || '--';
-  document.querySelector('.audio-size').innerText = session.audio_size || '--';
-  // add whatever other metadata fields you want restored here
+  // Clear any existing interval
+  if (progressInterval) clearInterval(progressInterval);
 
-  renderTranscript(editableTranscript);
-  updateState(projectSection, 'loaded');
-  showToast('Previous session restored', 'info');
-});
+  progressInterval = setInterval(() => {
+    if (sizeInMB && uploadMetric) {
+      const uploaded = (sizeInMB * (current / 100)).toFixed(1);
+      uploadMetric.innerText = `${uploaded} / ${sizeInMB.toFixed(2)} MB`;
+    }
+    const stage = stages[stageIndex];
+    if (!stage) return; // stay at 92% until done
+
+    if (current < stage.target) {
+      current += 0.5; // increment slowly
+      percentage.innerText = `${Math.floor(current)}%`;
+      
+      if (loadingDesc) loadingDesc.innerText = stage.label;
+    } else {
+      stageIndex++; // move to next stage
+    }
+  }, 100); // runs every 100ms
+}
+
+function finishProgress() {
+  if (progressInterval) {
+    clearInterval(progressInterval);
+    progressInterval = null;
+  }
+  const percentage = document.querySelector('.percentage');
+  const loadingDesc = document.querySelector('.loading-desc');
+  
+  percentage.innerText = '100%';
+  if (loadingDesc) loadingDesc.innerText = 'Transcription complete!';
+}
 
 
 
@@ -374,6 +445,8 @@ const uploadStatus = document.querySelector('.state');
 const audioSize = document.querySelector('.audio-size');
 
 let currentAudioUrl = null; //To keep track of the current audio URL for cleanup
+const speakerCount = document.querySelector('.speakers');
+
 
 
 async function handleTranscription() {
@@ -395,7 +468,7 @@ async function handleTranscription() {
   if (audioInput.files && audioInput.files[0]) {
     uploadType = 'file';
     uploadData = audioInput.files[0];
-    const sizeInMB = uploadData.size / (1024 * 1024);
+    sizeInMB = uploadData.size / (1024 * 1024);
     audioSize.innerText = `${sizeInMB.toFixed(2)} MB`;
     uploadmetirc.innerText = `0 / ${sizeInMB.toFixed(2)} MB`;
     // !IMPORTANT: replace 0 in uploadmetirc with actual file size uploaded
@@ -448,7 +521,6 @@ async function handleTranscription() {
     const audioName = document.querySelector('.audio-name');
     const transcriptDate = document.querySelector('.current-date');
     const transcriptLanguage = document.querySelector('.lang');
-    const speakerCount = document.querySelector('.speakers');
 
     // UI Prep
     transcriptTitle.innerText = `${uploadType === 'file' ? uploadData.name : uploadData}`;
@@ -460,18 +532,25 @@ async function handleTranscription() {
 
     updateState(projectSection, 'loading');
     projectTab.click();
+    // Start fake progress here
+    startFakeProgress(uploadType === 'file' ? uploadData.size / (1024 * 1024) : null); 
 
     const result = await uploadAndTranscribe(uploadType, uploadData);
+
+    finishProgress();
 
     const elapsed = Date.now() - start;
     if (elapsed < MIN_DISPLAY_TIME) {
       await wait(MIN_DISPLAY_TIME - elapsed);
     }
 
-    utterances = result.utterances;
     
+    utterances = result.utterances;
     window.transcriptResult = result; // Expose result for debugging
     originalTranscript = result //Set original copy of API response
+   
+    // new Set() automatically removes duplicates — so if you pass it ["A", "A", "B", "A", "B"] it gives you {A, B} and .size gives you 2.
+    const uniqueSpeakers = new Set(originalTranscript.utterances.map(u => u.speaker)).size;
     
     session = {
       audio_duration: originalTranscript.audio_duration,
@@ -482,10 +561,11 @@ async function handleTranscription() {
       utterances: originalTranscript.utterances,
       speakers: originalTranscript.speakers,
       words: originalTranscript.words,
+      speakercount: `${uniqueSpeakers} Speaker${uniqueSpeakers > 1 ? 's' : ''}`,
 
       // These come from uploadData, not the API
       title: uploadType === 'file' ? uploadData.name : uploadData,
-      audio_size: uploadType === 'file' ? `${(uploadData.size / (1024 * 1024)).toFixed(2)} MB` : '--'
+      audio_size: uploadType === 'file' ? `${(uploadData.size / (1024 * 1024)).toFixed(2)} MB` : '--',
     }
 
     /**The .map() HOF enables us to create our own version result we ca manipulate while keeping source of truth true
@@ -521,6 +601,7 @@ async function handleTranscription() {
     )
     
     transcriptLanguage.innerText = `${session.language_code}`;
+    speakerCount.innerText = session.speakercount;
 
 
     console.log(`originalTranscript:`, originalTranscript);
@@ -530,8 +611,8 @@ async function handleTranscription() {
     renderTranscript(editableTranscript);
     updateState(projectSection, 'loaded');
     // Save the full session (including original transcript) to localStorage for persistence and future use in recordings section
-    saveToLocalStorage('originalTranscript', originalTranscript);
-    saveToLocalStorage(TRANSCRIPT_KEY, session);
+    saveToLocalStorage('originalTranscript', originalTranscript, showToast);
+    saveToLocalStorage(TRANSCRIPT_KEY, session, showToast);
 
     // Show success toast for UI feedback
     showToast('Transcription successful!', 'success')
@@ -550,12 +631,7 @@ async function handleTranscription() {
     transcriptTab.click();
   } finally {
     // UNLOCK UI here 
-    label.classList.remove('is-disabled');
-    urlUploadBtn.classList.remove('is-disabled');
-    label.innerText = 'Upload Audio';
-    urlUploadBtn.innerText = 'Upload Audio';
-    audioInput.value = '';
-    urlInput.value = '';
+    unlockUploadUI();
   }
 }
 
@@ -572,6 +648,25 @@ function resetAudioUI() {
     lucide.createIcons();
   }
 }
+
+let isProcessing = false;
+
+function lockUploadUI() {
+  isProcessing = true;
+  label.classList.add('is-disabled');
+  urlUploadBtn.classList.add('is-disabled');
+}
+
+function unlockUploadUI() {
+  isProcessing = false;
+  label.classList.remove('is-disabled');
+  urlUploadBtn.classList.remove('is-disabled');
+  label.innerText = 'Upload Audio';
+  urlUploadBtn.innerText = 'Upload Audio';
+  audioInput.value = '';
+  urlInput.value = '';
+}
+
 
 // 2. Initialize EVENT LISTENERS
 // Sync ranger slider input with audio
@@ -611,26 +706,20 @@ audioRange.addEventListener('input', () => {
 });
 
 audioInput.addEventListener('change', () => {
+  if (isProcessing) return; // ← guard
   if (audioInput.files && audioInput.files[0]) {
-    label.innerText = 'Uploading...'
-    // toggleClass(label, '.disabled')
-    // label.classList.remove('disabled');
-    label.classList.add('is-disabled');
-    setTimeout(() => {
-      handleTranscription();
-    }, 2000);
+    label.innerText = 'Uploading...';
+    lockUploadUI(); // ← lock both
+    setTimeout(() => { handleTranscription(); }, 2000);
   }
 });
 
 urlUploadBtn.addEventListener('click', () => {
+  if (isProcessing) return; // ← guard
   if (urlInput.value.trim()) {
-    // urlUploadBtn.classList.remove('disabled');
-    urlUploadBtn.innerText = 'Uploading...'
-    urlUploadBtn.classList.add('is-disabled')
-    // toggleClass(urlUploadBtn, '.disabled')
-    setTimeout(() => {
-      handleTranscription();
-    }, 2000);
+    urlUploadBtn.innerText = 'Uploading...';
+    lockUploadUI(); // ← lock both
+    setTimeout(() => { handleTranscription(); }, 2000);
   } else {
     handleTranscription();
   }
@@ -639,6 +728,8 @@ urlUploadBtn.addEventListener('click', () => {
 // Add event listeners to play btn in custom audio interface
 const playBtn = document.getElementById('play-btn')
 playBtn.addEventListener("click", ()=> {
+  // set hasClicked to true for use in editing state logic to auto-pause when user clicks play
+  hasClicked = true;
   // Check if audio element is paused
   if (transcriptAudio.paused) {
     // Play audio and change btn icon for UI feedback
