@@ -434,33 +434,30 @@ function handleEdit(index) {
 
 // Function to handle save logic
 function handleSave(index) {
-  // Grab the current speakerblock and the textarea
-  const currentSpeakerBlock = document.querySelector(`[data-index="${index}"]`)
-  const textarea = currentSpeakerBlock.querySelector('textarea')
+  const currentSpeakerBlock = document.querySelector(`[data-index="${index}"]`);
+  const textarea = currentSpeakerBlock.querySelector('textarea');
   if (!textarea) console.warn('Textarea not found');
 
-  // use .value on textarea as it gets updated on every keystroke unlike innerText
-  const newText = textarea.value.trim().split(/\s+/); // split on any whitespace
-  console.log(newText);
- 
+  const newText = textarea.value.trim().split(/\s+/);
   const oldWords = editableTranscript[index].words;
 
-  // Reconcile: keep timing data where possible, null it out where the word is new
-   editableTranscript[index].words = newText.map((text, i) => {
-    if (oldWords[i]) {
-      // Word existed at this index - keep timing, just update the text
-      return { ...oldWords[i], text: text };
-    } else {
-      // Brand new word (user typed more than existed) - no timing data
-      return { text: text, start: null, end: null, speaker: oldWords[0]?.speaker || null, confidence: null };
+  // If word count changed, timing alignment is broken so null everything out
+  // This means the edited block won't highlight at all - better than highlighting wrong words
+  const countChanged = newText.length !== oldWords.length;
+
+  editableTranscript[index].words = newText.map((text, i) => {
+    if (!countChanged && oldWords[i]) {
+      return { ...oldWords[i], text }; // same count - safe to keep timing
     }
+    // count changed OR new word beyond old length - no valid timing
+    return { text, start: null, end: null, speaker: oldWords[0]?.speaker || null, confidence: null };
   });
 
-  // Reset edit state and re-render
   editingIndex = null;
   transcriptEditor.classList.remove('has-editing');
   updateTranscriptState(index, 'normal');
 }
+
 
 // Function to handle cancel logic
 function cancelEdit(index) {
