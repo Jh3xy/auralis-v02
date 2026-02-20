@@ -1,5 +1,5 @@
 
-// utils.js
+// ./js/utils.js
 
 /**=====================
  *    DOM UTILITIES
@@ -67,9 +67,6 @@ function createInitials(username) {
   }
 
   localStorage.setItem('auralis-onboarding', JSON.stringify(onboarding));
-
-  
-  
   console.log(initials);
   console.log(onboarding.username)
   // return initials;
@@ -101,8 +98,6 @@ function createInitials(username) {
 
   console.log(`Updated initials to: ${initials} for user: ${username}`);
 }
-
-
 
 /**=====================
  *    DATE UTILITIES
@@ -160,9 +155,6 @@ function getCurrentDate(useMonthName = false) {
 }
 
 
-
-
-
 /**=====================
  *    TIME UTILITIES
  * ======================
@@ -205,6 +197,18 @@ function getRelativeTime(timestamp) {
 }
 
 
+/**=====================
+ *    STORAGE UTILITIES
+ * ======================
+ */
+
+function saveToLocalStorage(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+  console.log(`${key} saved to localStorage:`, value);
+}
+
+
+
 
 // Export all utility functions
 export {
@@ -221,4 +225,7 @@ export {
   // Time Utilities
   formatTime,
   getRelativeTime,
+
+  // Storage
+  saveToLocalStorage
 };

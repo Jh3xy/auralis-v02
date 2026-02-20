@@ -305,4 +305,9 @@ input[type="range"]::-moz-range-thumb {
 .upload-size {
   align-items: flex-start;
 }
-
+.saved-time{
+  display: block;
+  text-align: end;
+  font-size: 8px;
+  opacity: 0.57;
+}

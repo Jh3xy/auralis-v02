@@ -12,6 +12,8 @@ import './styles/onboarding.css'
 import './styles/transcripts.css'
 import './styles/queries.css'
 
+
+const TRANSCRIPT_KEY = 'auralis-transcript'
 const APP_VERSION = 'v1.5-1.00';
 const plan = document.querySelector('.plan');
 plan.innerText = `Beta - ${APP_VERSION}`
@@ -19,7 +21,8 @@ console.log('Vite is Running Script!');
 console.log(`Auralis ${APP_VERSION}`)
 
 // Import JS files here
-import { toggleClass, createInitials, formatTime, formatDate  } from './js/utils'
+  
+import { toggleClass, createInitials, formatTime, formatDate, saveToLocalStorage, getRelativeTime} from './js/utils'
 import { uploadAndTranscribe } from "./js/transcribe";
 import { eventHub } from "./js/eventhub";
 
@@ -28,9 +31,12 @@ let utterances;
 window.utterances = utterances;
 window.createInitials = createInitials
 
-
+let session = null
 let originalTranscript = null // store original transcript result - Full API response Object
 let editableTranscript = null // store editable transcript result - Array of utternaces from API result object
+
+const transcriptAudio = document.getElementById('audio-engine');
+
 
 // Function to set UI states
 function updateState(element, state) {
@@ -38,7 +44,6 @@ function updateState(element, state) {
   element.classList.remove(...states)
   element.classList.add(state)
 }
-
 
 // Wait promise for enforcng mimimum dispay time
 // This creates a "pause" that doesn't freeze the browser and ensures UI states are intentional
@@ -203,9 +208,6 @@ function updateTranscriptState(index, mode) {
     }).join(' ')
     currentSpeakerText.innerHTML = contentHTML;
   }
-  
-
-
 }
 
 // Use event delegation on parent to avoid multiple event listners added
@@ -220,24 +222,78 @@ transcriptEditor.addEventListener("click", (e)=> {
   
   // check which among the btnsare not null
   if (editbtn) {
+
+    // pause audio for editing
+    if (!transcriptAudio.paused) {
+      transcriptAudio.pause();
+      playBtn.innerHTML = `<i data-lucide="play"></i>`;
+      lucide.createIcons();
+    }
     const speakerbox = editbtn.closest('.speaker-box');
     //Force data type of data-index in speakerbox to be number if speakerbox exists
     let index = speakerbox ? Number(speakerbox.dataset.index) : null; 
     handleEdit(index);
     console.log(editbtn);
   } else if (savebtn) {
+    
+    // play if paused for better UX after saving edits
+    if (transcriptAudio.paused) {
+      transcriptAudio.play();
+      playBtn.innerHTML = `<i data-lucide="pause"></i>`;
+      lucide.createIcons();
+    }
     const speakerbox = savebtn.closest('.speaker-box');
     let index = speakerbox ? Number(speakerbox.dataset.index) : null; 
     handleSave(index);
+    updateTranscriptStorage(index)
     console.log(savebtn)
   } else if (cancelbtn) {
+    
+    // play if paused for better UX after saving edits
+    if (transcriptAudio.paused) {
+      transcriptAudio.play();
+      playBtn.innerHTML = `<i data-lucide="pause"></i>`;
+      lucide.createIcons();
+    }
     const speakerbox = cancelbtn.closest('.speaker-box');
     let index = speakerbox ? Number(speakerbox.dataset.index) : null; 
     cancelEdit(index)
   } else {
-    console.warn("Clicked element not found")
+    return;
   }
 })
+
+let lastSavedAt = null; // store auto-save timestamp globally
+
+/**
+ * FUNCTION TO UPDATE TRANSCRIPT UTTERANCE ARRAY BASED ON INDEX
+ * It parses editable the session object and narrows down to the utterance in question based on index, 
+ * then updates the words array of that utterance with the new text from textarea while keeping timing data where possible
+ */
+
+function updateTranscriptStorage(index) {
+  const raw = localStorage.getItem(TRANSCRIPT_KEY);
+  if (!raw) return;
+  
+  const parsed = JSON.parse(raw); // parsed is now the session object
+
+  parsed.utterances[index] = editableTranscript[index]; // go into .utterances
+
+  saveToLocalStorage(TRANSCRIPT_KEY, parsed);
+  console.log(`Storage updated at index ${index}`);
+  
+  lastSavedAt = Date.now();
+  updateSaveLabel();
+}
+
+function updateSaveLabel() {
+  const saveTime = document.querySelector('.saved-time');
+  if (!lastSavedAt) return;
+  saveTime.innerText = `Last saved: ${getRelativeTime(lastSavedAt)}`;
+}
+// Re-run every 30 seconds so the label stays accurate
+setInterval(updateSaveLabel, 30_000);
+
 
 // Function to handle edit of speaker box
 function handleEdit(index) {
@@ -283,6 +339,31 @@ function cancelEdit(index) {
   updateTranscriptState(index, 'normal');
 }
 
+document.addEventListener('DOMContentLoaded', () => {
+  const savedData = localStorage.getItem(TRANSCRIPT_KEY);
+  if (!savedData) return;
+
+  const projectSection = document.getElementById('projects');
+  const savedSession = JSON.parse(savedData);
+
+  // Restore session and editableTranscript
+  session = savedSession;
+  editableTranscript = savedSession.utterances;
+
+  // Restore UI metadata
+  document.querySelector('.lang').innerText = session.language_code || '--';
+  document.querySelector('.transcript-title').innerText = session.title || 'Untitled';
+  document.querySelector('.audio-name').innerText = session.title || 'Untitled';
+  document.querySelector('.lang').innerText = session.language_code || '--';
+  document.querySelector('.audio-size').innerText = session.audio_size || '--';
+  // add whatever other metadata fields you want restored here
+
+  renderTranscript(editableTranscript);
+  updateState(projectSection, 'loaded');
+  showToast('Previous session restored', 'info');
+});
+
+
 
 const audioInput = document.getElementById('audio-input');
 const urlInput = document.getElementById('url-audio-input');
@@ -293,7 +374,6 @@ const uploadStatus = document.querySelector('.state');
 const audioSize = document.querySelector('.audio-size');
 
 let currentAudioUrl = null; //To keep track of the current audio URL for cleanup
-const transcriptAudio = document.getElementById('audio-engine');
 
 
 async function handleTranscription() {
@@ -360,12 +440,6 @@ async function handleTranscription() {
   const MIN_DISPLAY_TIME = 2500; 
 
   try {
-    // LOCK UI immediately
-    // toggleClass(label, 'disabled');
-    // toggleClass(urlUploadBtn, 'disabled');
-    // label.innerText = 'Uploading...';
-    // urlUploadBtn.innerText = 'Uploading...';
-
 
     const projectSection = document.getElementById('projects');
     const projectTab = document.querySelector('.nav-link[data-id="projects"]');
@@ -394,23 +468,36 @@ async function handleTranscription() {
       await wait(MIN_DISPLAY_TIME - elapsed);
     }
 
-    transcriptLanguage.innerText = `${result.language_code}`;
     utterances = result.utterances;
-
+    
     window.transcriptResult = result; // Expose result for debugging
     originalTranscript = result //Set original copy of API response
+    
+    session = {
+      audio_duration: originalTranscript.audio_duration,
+      confidence: originalTranscript.confidence,
+      language_code: originalTranscript.language_code,
+      id: originalTranscript.id,
+      text: originalTranscript.text,
+      utterances: originalTranscript.utterances,
+      speakers: originalTranscript.speakers,
+      words: originalTranscript.words,
 
-    // The .map() HOF enables us to create our own version of the original transcript that we can manipulate and edit without affecting the original data from the API. This is important for maintaining data integrity and allowing users to revert changes if needed.
+      // These come from uploadData, not the API
+      title: uploadType === 'file' ? uploadData.name : uploadData,
+      audio_size: uploadType === 'file' ? `${(uploadData.size / (1024 * 1024)).toFixed(2)} MB` : '--'
+    }
 
-    /**Should produce something like this
+    /**The .map() HOF enables us to create our own version result we ca manipulate while keeping source of truth true
+    *Should produce something like this
      *[{
         speaker: "A",
         start: 800,
         end: 482820,
         words: [...]
-      }]
-     */
-    editableTranscript = originalTranscript.utterances.map(
+        }]
+        */
+    editableTranscript = session.utterances.map(
       (utterance)=> {
         return {
           speaker: utterance.speaker,
@@ -433,12 +520,18 @@ async function handleTranscription() {
       }
     )
     
+    transcriptLanguage.innerText = `${session.language_code}`;
+
+
     console.log(`originalTranscript:`, originalTranscript);
+    console.log(`Session:`, session);
     console.log(`editableTranscript:`, editableTranscript);
     
     renderTranscript(editableTranscript);
-
     updateState(projectSection, 'loaded');
+    // Save the full session (including original transcript) to localStorage for persistence and future use in recordings section
+    saveToLocalStorage('originalTranscript', originalTranscript);
+    saveToLocalStorage(TRANSCRIPT_KEY, session);
 
     // Show success toast for UI feedback
     showToast('Transcription successful!', 'success')
@@ -457,12 +550,8 @@ async function handleTranscription() {
     transcriptTab.click();
   } finally {
     // UNLOCK UI here 
-    // label.classList.remove('disabled');
     label.classList.remove('is-disabled');
-    // urlUploadBtn.classList.remove('disabled');
     urlUploadBtn.classList.remove('is-disabled');
-    // toggleClass(label, 'disabled');
-    // toggleClass(urlUploadBtn, 'disabled');
     label.innerText = 'Upload Audio';
     urlUploadBtn.innerText = 'Upload Audio';
     audioInput.value = '';
