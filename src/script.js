@@ -1,6 +1,7 @@
+
+
 // !IMPORTANT: Notes:
-// - Add a small delay (setTimeout) when switching states to allow state transitions for smoother UX
-// - (Optional) Use small spinner button beside file name in loading state for better feedback and in buttons in loading dock
+// - Include keyboard support for saving and posibbly editing (transcript editor is already setup for this with textarea, just need to add event listener for keydown and check if it's ctrl/cmd + s, then trigger save logic)
 
 
 // Import Stylesheets
@@ -24,6 +25,7 @@ console.log(`Auralis ${APP_VERSION}`)
   
 import { toggleClass, createInitials, formatTime, formatDate, saveToLocalStorage, getRelativeTime} from './js/utils'
 import { uploadAndTranscribe } from "./js/transcribe";
+import { saveAudioBlob, getAudioBlob, clearAudioBlob } from './js/audioDB.js';
 import { eventHub } from "./js/eventhub";
 
 
@@ -40,7 +42,55 @@ let sizeInMB;
 const transcriptAudio = document.getElementById('audio-engine');
 
 // Restore transcripts, etc on load
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+
+  const storageKey = 'auralis-onboarding';
+  const onboarding = JSON.parse(localStorage.getItem(storageKey));
+  
+  if (onboarding && onboarding.username) {
+    createInitials(onboarding.username);
+    console.log('Username restored from localStorage');
+  }
+
+
+  // on DOMContentLoaded check storage for current section
+  const currentSection = localStorage.getItem('current-section')
+  if (currentSection) {
+    // console.log(`${currentSection} section found`)
+    
+    // loop through sections remove show class and add to matching section
+    const sections = document.querySelectorAll('.section');
+    sections.forEach((section)=> {
+      if (section.id === currentSection) {
+        // Remove show class from all sections
+        sections.forEach((sec) => sec.classList.remove('show'));
+        // Add show class to the matching section
+        section.classList.add('show');
+        // console.log(`Switched to section: ${currentSection} after reload`);
+      }
+    })
+    
+    // Also update active class in navbar
+    const navlinks = document.querySelectorAll('.nav-link')
+    
+    // First, remove active from all nav links
+    navlinks.forEach((navLink) => {
+      navLink.classList.remove('active') 
+    })
+    
+    // Then add active to the matching one
+    navlinks.forEach((navLink) => {
+      if (navLink.dataset.id === currentSection) {
+        navLink.classList.add('active') 
+        // console.log(`Activated nav link: ${currentSection}`)
+      }
+    })
+  } else {
+    console.warn('Could not find current section')
+  }
+
+
+  
   const savedData = localStorage.getItem(TRANSCRIPT_KEY);
   if (!savedData) return;
 
@@ -57,11 +107,32 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelector('.audio-name').innerText = session.title || 'Untitled';
   document.querySelector('.lang').innerText = session.language_code || '--';
   document.querySelector('.audio-size').innerText = session.audio_size || '--';
-  // add whatever other metadata fields you want restored here
+  // These two are missing:
+  document.querySelector('.current-date').innerText = session.date ? formatDate(session.date, true) : '--';
+  document.querySelector('.speakers').innerText = session.speakercount || '--';
+  
 
   renderTranscript(editableTranscript);
   updateState(projectSection, 'loaded');
   showToast('Previous session restored', 'info');
+
+
+  // Try to restore the audio too
+  const savedBlob = await getAudioBlob();
+  if (savedBlob) {
+    // Same trick you already use in handleTranscription
+    const src = URL.createObjectURL(savedBlob);
+    currentAudioUrl = src;
+    transcriptAudio.src = src;
+    transcriptAudio.load();
+
+    // Enable the audio player UI since we have audio
+    document.querySelector('.audio-player').classList.remove('is-disabled');
+    console.log('Audio restored from IndexedDB');
+  } else {
+    // No audio saved (URL upload or first visit) - keep player disabled
+    document.querySelector('.audio-player').classList.add('is-disabled');
+  }
 });
 
 
@@ -267,6 +338,9 @@ transcriptEditor.addEventListener("click", (e)=> {
     let index = speakerbox ? Number(speakerbox.dataset.index) : null; 
     handleEdit(index);
     console.log(editbtn);
+
+    // Add keydown for save here so it only applies when editing
+    document.addEventListener('keydown', handleKeyDown);
   } else if (savebtn) {
     
     if (hasClicked) {
@@ -302,6 +376,21 @@ transcriptEditor.addEventListener("click", (e)=> {
     return;
   }
 })
+
+
+function handleKeyDown(e) {
+  // Only handle keydown if we're in editing mode
+  if (!transcriptEditor.classList.contains('has-editing')) return;
+
+  // Check for Ctrl/Cmd + S (save)
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    e.preventDefault(); // Prevent default save behavior (e.g., browser save dialog)
+    const index = editingIndex;
+    handleSave(index);
+    updateTranscriptStorage(index);
+  }
+}
+
 
 
 let lastSavedAt = null; // store auto-save timestamp globally
@@ -457,6 +546,9 @@ async function handleTranscription() {
 
   // Revoke any other previous audio urls to free memory
   if (currentAudioUrl) {
+    // Clear the old audio from audioDB
+    clearAudioBlob();
+
     URL.revokeObjectURL(currentAudioUrl);
     currentAudioUrl = null;
   }
@@ -486,6 +578,7 @@ async function handleTranscription() {
     // set transcriptAudio src to src varibale and load
     transcriptAudio.src = src;
     transcriptAudio.load()
+    await saveAudioBlob(uploadData); // uploadData is the File object 
     
     
   } else if (urlInput.value.trim()) {
@@ -561,6 +654,7 @@ async function handleTranscription() {
       utterances: originalTranscript.utterances,
       speakers: originalTranscript.speakers,
       words: originalTranscript.words,
+      date: Date.now(),
       speakercount: `${uniqueSpeakers} Speaker${uniqueSpeakers > 1 ? 's' : ''}`,
 
       // These come from uploadData, not the API
@@ -675,12 +769,49 @@ const audioTime = document.querySelector('.total-time');
 const currentTime = document.querySelector('.current-time');
 
 transcriptAudio.addEventListener("timeupdate", () => {
-  // Keep the range slider in seconds (it matches the audio player better)
-  audioRange.value = transcriptAudio.currentTime; 
-  
-  // Convert seconds to MS for your specific formatTime function
+  audioRange.value = transcriptAudio.currentTime;
+
   const currentTimeMs = transcriptAudio.currentTime * 1000;
-  currentTime.innerText = formatTime(currentTimeMs); 
+  currentTime.innerText = formatTime(currentTimeMs);
+
+  // Remove highlight from whichever word had it before
+  const previousWord = document.querySelector('.speaker-text span.active-word');
+  if (previousWord) {
+    previousWord.classList.remove('active-word');
+  }
+
+  // Find and highlight the word that matches current playback time
+  const allSpans = document.querySelectorAll('.speaker-text span');
+  allSpans.forEach(span => {
+    const start = Number(span.dataset.start);
+    const end = Number(span.dataset.end);
+
+    if (start && end && currentTimeMs >= start && currentTimeMs <= end) {
+      span.classList.add('active-word');
+
+      // --- AUTO-SCROLL LOGIC ---
+      // getBoundingClientRect() tells us where this element is on screen RIGHT NOW
+      // It gives us top/bottom relative to the visible viewport (what you can see)
+      const rect = span.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+
+      // Check if the word has gone below 85% of the screen height
+      // We use 75% (not 100%) so the scroll happens before the word fully disappears
+      // giving the user a comfortable head start before the next scroll
+      const isBelow = rect.bottom > windowHeight * 0.85;
+
+      // Check if the word is above the top of the screen
+      // (happens when user manually scrolls up and audio keeps playing)
+      const isAbove = rect.top < 0;
+
+      if (isBelow || isAbove) {
+        // 'center' places the active word in the middle of the screen
+        // so the user gets a full screen of reading space before next scroll
+        // 'smooth' makes it animate instead of jump
+        span.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  });
 });
 
 // Set the audio time on metadata load for better UX
@@ -761,6 +892,32 @@ fowardBtn.addEventListener("click", ()=> {
   playBtn.innerHTML = `<i data-lucide="play"></i>`
   lucide.createIcons();
 })
+
+// Add this near your other audio button listeners
+const playbackBtn = document.querySelector('.playback');
+
+// The speeds to cycle through in order
+const speedSteps = [1, 1.5, 2];
+let speedIndex = 0; // start at 1x
+
+playbackBtn.addEventListener('click', () => {
+  // Move to next speed, wrap back to 0 when we reach the end
+  speedIndex = (speedIndex + 1) % speedSteps.length;
+  
+  const newSpeed = speedSteps[speedIndex];
+  
+  // Apply to the actual audio element - this affects playback AND karaoke timing
+  // because timeupdate still fires based on real audio position
+  transcriptAudio.playbackRate = newSpeed;
+  
+  // Update the button label
+  playbackBtn.innerHTML = `<i data-lucide="gauge"></i> ${newSpeed}x`;
+  
+  // Re-render the lucide icon since we replaced innerHTML
+  lucide.createIcons();
+});
+
+
 
 
 
@@ -903,58 +1060,8 @@ function handleSectionSwitch(clickedElement) {
 }
 
 
-// Current section persistence on page reload
-document.addEventListener("DOMContentLoaded", ()=> {
-  // on DOMContentLoaded check storage for current section
-  const currentSection = localStorage.getItem('current-section')
-  if (currentSection) {
-    // console.log(`${currentSection} section found`)
-    
-    // loop through sections remove show class and add to matching section
-    const sections = document.querySelectorAll('.section');
-    sections.forEach((section)=> {
-      if (section.id === currentSection) {
-        // Remove show class from all sections
-        sections.forEach((sec) => sec.classList.remove('show'));
-        // Add show class to the matching section
-        section.classList.add('show');
-        // console.log(`Switched to section: ${currentSection} after reload`);
-      }
-    })
-    
-    // Also update active class in navbar
-    const navlinks = document.querySelectorAll('.nav-link')
-    
-    // First, remove active from all nav links
-    navlinks.forEach((navLink) => {
-      navLink.classList.remove('active') 
-    })
-    
-    // Then add active to the matching one
-    navlinks.forEach((navLink) => {
-      if (navLink.dataset.id === currentSection) {
-        navLink.classList.add('active') 
-        // console.log(`Activated nav link: ${currentSection}`)
-      }
-    })
-  } else {
-    console.warn('Could not find current section')
-  }
-})
-
 toggleClass(navLinks, 'active', handleSectionSwitch)
 
-
-// Restore username and initials on page load
-document.addEventListener('DOMContentLoaded', () => {
-  const storageKey = 'auralis-onboarding';
-  const onboarding = JSON.parse(localStorage.getItem(storageKey));
-  
-  if (onboarding && onboarding.username) {
-    createInitials(onboarding.username);
-    console.log('Username restored from localStorage');
-  }
-});
 
 const uploadBtnSecondary = document.querySelector('.upload-btn-alt')
 uploadBtnSecondary.addEventListener('click', ()=> {
@@ -999,12 +1106,6 @@ const sidebar = document.querySelector('.sidebar');
 function closeMobileMenu() {
   document.body.classList.remove('open-nav');
   // console.log('Mobile menu closed');
-}
-
-// Function to open the mobile menu
-function openMobileMenu() {
-  document.body.classList.add('open-nav');
-  // console.log('Mobile menu opened');
 }
 
 // Function to toggle the mobile menu

@@ -224,10 +224,13 @@ input[type="range"]::-moz-range-thumb {
   font-size: var(--fs-base);
   width: 100%;
 }
-.speaker-text .active-word{
-  background-color: rgb(from var(--color-highlight) r g b / 0.3);
+.speaker-text span{
   border-radius: 4px;
   padding: 0 2px;
+  display: inline-block;
+}
+.speaker-text .active-word{
+  background-color: rgb(from var(--color-highlight) r g b / 0.3);
   font-weight: var(--fw-medium);
   color: var(--text-main);
 }
