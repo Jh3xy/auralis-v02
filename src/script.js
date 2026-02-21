@@ -111,6 +111,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // These two are missing:
   document.querySelector('.current-date').innerText = session.date ? formatDate(session.date, true) : '--';
   document.querySelector('.speakers').innerText = session.speakercount || '--';
+  document.querySelector('.audio-duration').innerText = session.audio_duration ? formatTime(session.audio_duration * 1000) : '--';
   
 
   renderTranscript(editableTranscript);
@@ -164,14 +165,24 @@ function showToast(msg, type = 'info', duration = 4500) {
   // Create toast message
   const message = document.createElement('span');
   message.classList.add('toast-message');
+  const icon = document.createElement('div');
+  icon.classList.add('icon');
   message.textContent = msg;
+  const i = document.createElement('i');
+  i.dataset.lucide = type === 'error' ? 'circle-x' : type === 'success' ? 'circle-check' : type === 'warning' ? 'triangle-alert' : 'info';
+  icon.appendChild(i);
+  message.prepend(icon);
+  
+  
   
   // Append message to toast
   toast.appendChild(message);
   
   // Append toast to container
   container.appendChild(toast);
+  lucide.createIcons(); // Render icon in new toasts
   console.log(container)
+  window.container = container; // Expose for debugging 
 
   // Auto-dismiss after .removing animation duration in./styles/utils.js 
   setTimeout(() => {
@@ -612,6 +623,7 @@ async function handleTranscription() {
     const file = document.querySelector('.file.loading-sub-text');
     const transcriptTitle = document.querySelector('.transcript-title');
     const audioName = document.querySelector('.audio-name');
+    const audioDuration = document.querySelector('.audio-duration');
     const transcriptDate = document.querySelector('.current-date');
     const transcriptLanguage = document.querySelector('.lang');
 
@@ -696,6 +708,7 @@ async function handleTranscription() {
     
     transcriptLanguage.innerText = `${session.language_code}`;
     speakerCount.innerText = session.speakercount;
+    audioDuration.innerText = formatTime(session.audio_duration * 1000); // API gives seconds, convert to ms for formatting
 
 
     console.log(`originalTranscript:`, originalTranscript);
@@ -925,8 +938,80 @@ exportBtn.addEventListener('click', () => {
   downloadTXT(editableTranscript, session.title || 'transcript');
 });
 
+// Store the handler in a variable so we can re-attach it without arguments.callee
+function attachTitleEdit(element) {
+  element.addEventListener('dblclick', handleTitleDblClick);
+}
 
+function handleTitleDblClick() {
+  const currentTitle = session.title || 'Untitled';
 
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = currentTitle;
+  input.className = 'title-edit-input';
+
+  this.replaceWith(input); // 'this' is the heading element that was double-clicked
+  input.focus();
+  input.select();
+
+  // Guard flag - prevents saveTitle from running twice
+  // (blur fires after keydown replaces the element, causing the second crash)
+  let saved = false;
+
+  function saveTitle() {
+    if (saved) return; // already ran once, bail out
+    saved = true;
+
+    const newTitle = input.value.trim() || currentTitle;
+
+    // Update session in memory
+    session.title = newTitle;
+
+    // Sync audio player name
+    document.querySelector('.audio-name').innerText = newTitle;
+
+    // Persist to localStorage
+    const raw = localStorage.getItem(TRANSCRIPT_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      parsed.title = newTitle;
+      saveToLocalStorage(TRANSCRIPT_KEY, parsed, showToast);
+    }
+
+    // Rebuild the heading and re-attach the listener using the named function
+    const newHeading = document.createElement('h1');
+    newHeading.className = 'transcript-title';
+    newHeading.innerText = newTitle;
+    input.replaceWith(newHeading);
+    attachTitleEdit(newHeading); // ← named reference, no arguments.callee needed
+
+    showToast('Title updated', 'success');
+    lastSavedAt = Date.now();
+    updateSaveLabel();
+  }
+
+  function cancelEdit() {
+    if (saved) return;
+    saved = true;
+
+    const restored = document.createElement('h1');
+    restored.className = 'transcript-title';
+    restored.innerText = currentTitle;
+    input.replaceWith(restored);
+    attachTitleEdit(restored);
+  }
+
+  input.addEventListener('blur', saveTitle);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') saveTitle();
+    if (e.key === 'Escape') cancelEdit();
+  });
+}
+
+// Attach to the initial element on load
+const transcriptTitleEl = document.querySelector('.transcript-title');
+if (transcriptTitleEl) attachTitleEdit(transcriptTitleEl);
 
 
 

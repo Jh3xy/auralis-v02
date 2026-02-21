@@ -6,12 +6,30 @@
  */
 
 
+
+/**
+ * Strips the file extension from a filename.
+ * Works with any extension length — .mp3, .flac, .mp4, etc.
+ * 
+ * "interview.mp3"  → "interview"
+ * "tlc-audio.mp4"  → "tlc-audio"
+ * "podcast.flac"   → "podcast"
+ * 
+ * @param {string} filename
+ * @returns {string}
+ */
+export function stripExtension(filename) {
+  const lastDot = filename.lastIndexOf('.');
+  return lastDot !== -1 ? filename.slice(0, lastDot) : filename;
+}
+
+
+
 /**
  * Transforms the editableTranscript array into one clean formatted string.
- * This is kept as a separate function so it can be reused by the PDF exporter
- * and any other export format without duplicating the logic.
+ * Can be used by pdf or text, pdf exporter, etc 
  * 
- * Output format:
+ * Output:
  *   Speaker A:
  *      The text for this block...
  * 
@@ -25,7 +43,6 @@ export function formatTranscriptText(editableTranscript) {
   return editableTranscript
     .map(utterance => {
       // .text is the full sentence string on each utterance object
-      // It stays in sync with .words because handleSave rebuilds it on every save
       return `Speaker ${utterance.speaker}:\n   ${utterance.text}`;
     })
     .join('\n\n'); // two newlines between each block = blank line separator
@@ -49,7 +66,7 @@ export function downloadTXT(editableTranscript, audioName) {
   // ceate the link to be cliked to download
   const linktag = document.createElement('a');
   linktag.href = src
-  linktag.download = `${audioName}.txt`;
+  linktag.download = `${stripExtension(audioName)}.txt`; // strips default file extension (.mp3) and adds .txt
   // init download
   linktag.click();
 
