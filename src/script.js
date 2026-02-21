@@ -23,10 +23,11 @@ console.log(`Auralis ${APP_VERSION}`)
 
 // Import JS files here
   
-import { toggleClass, createInitials, formatTime, formatDate, saveToLocalStorage, getRelativeTime} from './js/utils'
-import { uploadAndTranscribe } from "./js/transcribe";
+import { toggleClass, createInitials, formatTime, formatDate, saveToLocalStorage, getRelativeTime} from './js/utils.js'
+import { uploadAndTranscribe } from "./js/transcribe.js";
 import { saveAudioBlob, getAudioBlob, clearAudioBlob } from './js/audioDB.js';
-import { eventHub } from "./js/eventhub";
+import { downloadTXT } from './js/exporter.js';
+import { eventHub } from "./js/eventhub.js";
 
 
 let utterances;
@@ -120,7 +121,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Try to restore the audio too
   const savedBlob = await getAudioBlob();
   if (savedBlob) {
-    // Same trick you already use in handleTranscription
     const src = URL.createObjectURL(savedBlob);
     currentAudioUrl = src;
     transcriptAudio.src = src;
@@ -451,7 +451,10 @@ function handleSave(index) {
     }
     // count changed OR new word beyond old length - no valid timing
     return { text, start: null, end: null, speaker: oldWords[0]?.speaker || null, confidence: null };
+
   });
+  // Rebuild .text from the updated words so they always match
+  editableTranscript[index].text = editableTranscript[index].words.map(w => w.text).join(' ');
 
   editingIndex = null;
   transcriptEditor.classList.remove('has-editing');
@@ -505,7 +508,7 @@ function startFakeProgress() {
     } else {
       stageIndex++; // move to next stage
     }
-  }, 100); // runs every 100ms
+  }, 400); // runs every 400ms
 }
 
 function finishProgress() {
@@ -890,13 +893,10 @@ fowardBtn.addEventListener("click", ()=> {
   lucide.createIcons();
 })
 
-// Add this near your other audio button listeners
 const playbackBtn = document.querySelector('.playback');
-
 // The speeds to cycle through in order
 const speedSteps = [1, 1.5, 2];
 let speedIndex = 0; // start at 1x
-
 playbackBtn.addEventListener('click', () => {
   // Move to next speed, wrap back to 0 when we reach the end
   speedIndex = (speedIndex + 1) % speedSteps.length;
@@ -912,6 +912,17 @@ playbackBtn.addEventListener('click', () => {
   
   // Re-render the lucide icon since we replaced innerHTML
   lucide.createIcons();
+});
+
+
+// !NOTE: export button should open a modal with all the export formats and attach export formats to the btns
+const exportBtn = document.querySelector('.export-btn');
+exportBtn.addEventListener('click', () => {
+  if (!editableTranscript) {
+    showToast('No transcript to export', 'info');
+    return;
+  }
+  downloadTXT(editableTranscript, session.title || 'transcript');
 });
 
 
