@@ -124,6 +124,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (savedBlob) {
     const src = URL.createObjectURL(savedBlob);
     currentAudioUrl = src;
+    transcriptAudio.crossOrigin = 'anonymous';
+    transcriptAudio.preload = 'metadata';
     transcriptAudio.src = src;
     transcriptAudio.load();
 
@@ -571,6 +573,7 @@ async function handleTranscription() {
   if (audioInput.files && audioInput.files[0]) {
     uploadType = 'file';
     uploadData = audioInput.files[0];
+    console.log(`File type: ${uploadData.type}`)
     sizeInMB = uploadData.size / (1024 * 1024);
     audioSize.innerText = `${sizeInMB.toFixed(2)} MB`;
     uploadmetirc.innerText = `0 / ${sizeInMB.toFixed(2)} MB`;
@@ -587,6 +590,8 @@ async function handleTranscription() {
     const src = URL.createObjectURL(uploadData); // create a new src for audio element
     currentAudioUrl = src;  
     // set transcriptAudio src to src varibale and load
+    transcriptAudio.crossOrigin = 'anonymous';
+    transcriptAudio.preload = 'metadata';
     transcriptAudio.src = src;
     transcriptAudio.load()
     await saveAudioBlob(uploadData); // uploadData is the File object 
@@ -605,6 +610,8 @@ async function handleTranscription() {
     audioplayer.classList.add('is-disabled');
     uploadmetirc.innerText = `-- / --`;
 
+    transcriptAudio.crossOrigin = 'anonymous';
+    transcriptAudio.preload = 'metadata';
     transcriptAudio.src = uploadData;
     transcriptAudio.load();
   } else {
@@ -844,6 +851,14 @@ transcriptAudio.addEventListener("loadedmetadata", () => {
     resetAudioUI();
   }
 });
+
+// Audio debug event listners
+transcriptAudio.addEventListener('error', (e) => {
+  console.error('Audio error event', e, transcriptAudio.error);
+});
+transcriptAudio.addEventListener('canplay', () => console.log('canplay', transcriptAudio.duration));
+transcriptAudio.addEventListener('loadedmetadata', () => console.log('loadedmetadata', transcriptAudio.duration));
+transcriptAudio.addEventListener('play', () => console.log('play event'));
 
 audioRange.addEventListener('input', () => {
   transcriptAudio.currentTime = audioRange.value;

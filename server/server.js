@@ -88,7 +88,8 @@ app.post('/api/upload', upload.single('audio'), async (req, res) => {
     audio: audioSource,
     speaker_labels: true,     // enable speaker diarization
     format_text: true,        // punctuation + capitalization / cleaned text
-    language_detection: true // auto language detection (if not specified)
+    // language_detection: true // auto language detection (if not specified)
+    language_code: 'en', //Force english
 
     // other useful options you can toggle:
     // auto_chapters: true,      // creates chapter objects with start/end + summary
