@@ -25,7 +25,7 @@ export async function uploadAndTranscribe(type, data) {
       formData.append('audio', data);
       body = formData;
       
-      console.log(`Uploading file: ${data.name} , ${file.type} (${data.type})...`);
+      console.log(`Uploading file: ${data.name} , ${data.type} (${data.type})...`);
       
     } else if (type === 'url') {
       // URL upload - send JSON
