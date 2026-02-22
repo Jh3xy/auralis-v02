@@ -94,7 +94,7 @@ export async function uploadAndTranscribe(type, data) {
 
       // after parsing result:
       console.log('API language_code:', result.language_code, 'text sample:', result.text?.slice(0,120));
-      if (result.language_code && result.language_code !== 'en') {
+      if (result.language_code && !result.language_code.startsWith('en'))  {
         console.warn('API detected non-en language:', result.language_code);
         // optional: trigger a retry forcing language (see server snippet below)
       }
