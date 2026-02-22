@@ -151,7 +151,7 @@ function updateState(element, state) {
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Show toast Utility
-function showToast(msg, type = 'info', duration = 4500) {
+export function showToast(msg, type = 'info', duration = 4500) {
   // Create or get toast container
   let container = document.querySelector('.toast-container');
   if (!container) {

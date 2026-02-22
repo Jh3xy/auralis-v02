@@ -3,7 +3,7 @@
 // Transcription Module - transcribe.js
 
 
-import { showToast } from "./utils";
+import { showToast } from "../script.js";
 
 /**
  * Upload and transcribe function
