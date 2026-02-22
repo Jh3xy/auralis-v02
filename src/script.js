@@ -647,7 +647,10 @@ async function handleTranscription() {
     // Start fake progress here
     startFakeProgress(uploadType === 'file' ? uploadData.size / (1024 * 1024) : null); 
 
-    const result = await uploadAndTranscribe(uploadType, uploadData);
+    const fileDuration = Number.isFinite(transcriptAudio.duration) && transcriptAudio.duration > 0
+      ? transcriptAudio.duration
+      : null;
+    const transcriptionResult = await uploadAndTranscribe(uploadType, uploadData, fileDuration);
 
     finishProgress();
 
@@ -656,10 +659,47 @@ async function handleTranscription() {
       await wait(MIN_DISPLAY_TIME - elapsed);
     }
 
-    
+    // uploadAndTranscribe now has a stable return contract.
+    // We check `ok` before touching transcript fields to prevent undefined access crashes.
+    if (!transcriptionResult.ok || !transcriptionResult.transcript) {
+      const reasonMessageMap = {
+        no_speech_detected: 'No speech detected. Try a clearer speech recording.',
+        low_quality_transcript: 'Transcript quality is low. Try a clearer speech recording.',
+        invalid_upload_type: 'Upload type is invalid. Please try again.',
+        insufficient_speech: 'Not enough speech detected...',
+        low_confidence: 'Transcript confidence is low...',
+        low_speech_density: 'Speech density too low (likely music or silence)...'
+      };
+
+      uploadStatus.innerText = 'Needs retry';
+      uploadStatus.classList.add('failed');
+      updateState(projectSection, 'loaded');
+
+      showToast(
+        reasonMessageMap[transcriptionResult.reason] || 'Transcription could not be completed for this audio.',
+        'warning'
+      );
+
+      const transcriptTab = document.querySelector('.nav-link[data-id="transcription"]');
+      transcriptTab.click();
+      // re-enable upload UI so user can retry
+      unlockUploadUI();
+      return;
+    }
+
+    const result = transcriptionResult.transcript;
     utterances = result.utterances;
     window.transcriptResult = result; // Expose result for debugging
     originalTranscript = result //Set original copy of API response
+
+    if (!Array.isArray(originalTranscript.utterances)) {
+      uploadStatus.innerText = 'Needs retry';
+      uploadStatus.classList.add('failed');
+      updateState(projectSection, 'loaded');
+      showToast('Transcription could not be completed for this audio.', 'warning');
+      unlockUploadUI();
+      return;
+    }
    
     // new Set() automatically removes duplicates — so if you pass it ["A", "A", "B", "A", "B"] it gives you {A, B} and .size gives you 2.
     const uniqueSpeakers = new Set(originalTranscript.utterances.map(u => u.speaker)).size;
