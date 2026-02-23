@@ -104,8 +104,8 @@ label[for="audio-input"].is-disabled {
 
 /* Individual Toast */
 .toast {
-  width: 59%;
-  max-width: 220px;
+  width: 50%;
+  max-width: 400px;
   display: flex;
   align-items: center;
   gap: var(--space-sm);
@@ -154,48 +154,24 @@ label[for="audio-input"].is-disabled {
 }
 
 /* Toast Types */
-/* .toast.success {
-  background: var(--color-success-bg); 
-  border-color: var(--color-success);
-  color: var(--color-success);
-} */
 .toast.success .icon {
   background-color: rgb(from var(--color-success-bg) r g b / 0.3);
 }
 .toast.success .icon [data-ludice] {
   color: var(--color-success);
 }
-
-/* .toast.error {
-  background: var(--color-error-bg);
-  border-color: var(--color-error);
-  color: var(--color-error);
-} */
 .toast.error .icon {
   background-color: rgb(from var(--color-error-bg) r g b / 0.7);
 }
 .toast.error .icon [data-ludice] {
   color: var(--color-error);
 }
-
-/* .toast.warning {
-  background: var(--color-warning-bg);
-  border-color: var(--color-warning);
-  color: var(--color-warning);
-} */
 .toast.warning .icon {
   background-color: rgb(from var(--color-warning-bg) r g b / 0.7);
 }
 .toast.warning .icon [data-ludice] {
   color: var(--color-warning);
 }
-
-
-/* .toast.info {
-  background: rgba(224, 242, 254, 0.1); Using accent-2 color
-  border-color: var(--color-accent-2);
-  color: var(--color-accent-2);
-} */
 .toast.info .icon {
   background-color: rgba(224, 242, 254, 0.3);
 }
@@ -208,7 +184,7 @@ label[for="audio-input"].is-disabled {
   flex: 1;
   color: var(--text-main);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
 }
 

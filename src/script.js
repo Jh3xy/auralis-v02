@@ -33,6 +33,8 @@ import { eventHub } from "./js/eventhub.js";
 let utterances;
 window.utterances = utterances;
 window.createInitials = createInitials
+window.getAudioBlob = getAudioBlob; // expose IndexedDB audio reader for ad-hoc console debugging
+window.saveAudioBlob = saveAudioBlob;
 
 let session = null
 let originalTranscript = null // store original transcript result - Full API response Object
@@ -41,6 +43,118 @@ let hasClicked = false;
 let sizeInMB;
 
 const transcriptAudio = document.getElementById('audio-engine');
+
+function toEditableUtterances(utterances = []) {
+  return utterances.map((utterance) => ({
+    speaker: utterance.speaker,
+    start: utterance.start,
+    end: utterance.end,
+    text: utterance.text,
+    words: (utterance.words || []).map((word) => ({
+      text: word.text,
+      start: word.start,
+      end: word.end
+    }))
+  }));
+}
+
+function inflateUtterancesForRender(utterances = [], originalIndex = null) {
+  return utterances.map((utterance, idx) => {
+    const text = (utterance.text || '').trim();
+    const fallbackKey = `fb:${String(utterance.speaker ?? '')}|${text.slice(0, 40).toLowerCase()}`;
+    const idKey = utterance.id != null ? `id:${utterance.id}` : null;
+    const canonical = originalIndex
+      ? ((idKey && originalIndex.get(idKey)) || originalIndex.get(fallbackKey) || null)
+      : null;
+
+    const baseWords = Array.isArray(utterance.words) && utterance.words.length
+      ? utterance.words.map((word) => ({
+          text: word.text,
+          start: word.start ?? null,
+          end: word.end ?? null
+        }))
+      : (text
+          ? text.split(/\s+/).map((wordText) => ({ text: wordText, start: null, end: null }))
+          : []);
+
+    let foundTiming = false;
+    let reason = 'no_original_match';
+    let mergedStart = utterance.start ?? null;
+    let mergedEnd = utterance.end ?? null;
+
+    if (canonical && Array.isArray(canonical.words) && canonical.words.length) {
+      reason = 'matched_original';
+      if (mergedStart == null && canonical.start != null) mergedStart = canonical.start;
+      if (mergedEnd == null && canonical.end != null) mergedEnd = canonical.end;
+
+      // Best-effort timing merge by word text; preserves compact snapshot schema while restoring karaoke timings.
+      const buckets = new Map();
+      canonical.words.forEach((word) => {
+        const key = String(word.text || '').toLowerCase();
+        if (!buckets.has(key)) buckets.set(key, []);
+        buckets.get(key).push(word);
+      });
+
+      baseWords.forEach((word) => {
+        const key = String(word.text || '').toLowerCase();
+        const queue = buckets.get(key);
+        if (queue && queue.length) {
+          const timedWord = queue.shift();
+          if (word.start == null && timedWord.start != null) word.start = timedWord.start;
+          if (word.end == null && timedWord.end != null) word.end = timedWord.end;
+        }
+        if (word.start != null || word.end != null) foundTiming = true;
+      });
+
+      if (!foundTiming && (mergedStart != null || mergedEnd != null)) {
+        foundTiming = true;
+        reason = 'utterance_level_timing_only';
+      } else if (!foundTiming) {
+        reason = 'matched_without_word_timing';
+      }
+    }
+
+    if (!foundTiming) {
+      reason = reason === 'no_original_match' ? reason : 'timing_not_recoverable';
+    }
+
+    // console.debug('[inflate-timing]', {
+    //   index: idx,
+    //   id: utterance.id ?? canonical?.id ?? null,
+    //   foundTiming,
+    //   reason
+    // });
+
+    return {
+      ...utterance,
+      start: mergedStart,
+      end: mergedEnd,
+      words: baseWords,
+      no_timing: !foundTiming
+    };
+  });
+}
+
+function buildSessionSnapshot(baseSession, utterances = []) {
+  // Keep localStorage payload compact to avoid quota failures on large transcripts.
+  return {
+    audio_duration: baseSession.audio_duration,
+    confidence: baseSession.confidence,
+    language_code: baseSession.language_code,
+    id: baseSession.id,
+    text: baseSession.text,
+    date: baseSession.date,
+    speakercount: baseSession.speakercount,
+    title: baseSession.title,
+    audio_size: baseSession.audio_size,
+    utterances: utterances.map((u) => ({
+      speaker: u.speaker,
+      start: u.start,
+      end: u.end,
+      text: u.text
+    }))
+  };
+}
 
 // Restore transcripts, etc on load
 document.addEventListener('DOMContentLoaded', async () => {
@@ -92,15 +206,48 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
   
+  const savedOriginalRaw = localStorage.getItem('originalTranscript');
   const savedData = localStorage.getItem(TRANSCRIPT_KEY);
-  if (!savedData) return;
+  if (!savedData && !savedOriginalRaw) return;
 
   const projectSection = document.getElementById('projects');
-  const savedSession = JSON.parse(savedData);
+  const savedOriginal = savedOriginalRaw ? JSON.parse(savedOriginalRaw) : null;
+  const savedSession = savedData ? JSON.parse(savedData) : null;
+  const originalIndex = new Map();
 
-  // Restore session and editableTranscript
-  session = savedSession;
-  editableTranscript = savedSession.utterances;
+  // Build canonical index first so compact snapshot can be inflated deterministically on any reload.
+  if (savedOriginal && Array.isArray(savedOriginal.utterances)) {
+    savedOriginal.utterances.forEach((utterance) => {
+      if (utterance?.id != null) {
+        originalIndex.set(`id:${utterance.id}`, utterance);
+      }
+      const key = `fb:${String(utterance?.speaker ?? '')}|${String(utterance?.text || '').slice(0, 40).toLowerCase()}`;
+      if (!originalIndex.has(key)) originalIndex.set(key, utterance);
+    });
+  }
+
+  if (!savedSession && savedOriginal && Array.isArray(savedOriginal.utterances)) {
+    const clientMeta = savedOriginal._client || {};
+    originalTranscript = savedOriginal;
+    editableTranscript = toEditableUtterances(savedOriginal.utterances);
+    session = {
+      audio_duration: savedOriginal.audio_duration,
+      confidence: savedOriginal.confidence,
+      language_code: savedOriginal.language_code,
+      id: savedOriginal.id,
+      text: savedOriginal.text,
+      date: clientMeta.date || Date.now(),
+      speakercount: clientMeta.speakercount || '--',
+      title: clientMeta.title || savedSession?.title || 'Untitled',
+      audio_size: clientMeta.audio_size || savedSession?.audio_size || '--',
+      utterances: editableTranscript
+    };
+  } else {
+    session = savedSession;
+    originalTranscript = savedOriginal || null;
+    editableTranscript = inflateUtterancesForRender(savedSession?.utterances || [], originalIndex);
+    if (session) session.utterances = editableTranscript;
+  }
 
   // Restore UI metadata
   document.querySelector('.lang').innerText = session.language_code || '--';
@@ -420,7 +567,15 @@ function updateTranscriptStorage(index) {
   
   const parsed = JSON.parse(raw); // parsed is now the session object
 
-  parsed.utterances[index] = editableTranscript[index]; // go into .utterances
+  if (!Array.isArray(parsed.utterances)) parsed.utterances = [];
+  // Persist compact utterance shape to keep snapshot small and quota-safe.
+  parsed.utterances[index] = {
+    speaker: editableTranscript[index].speaker,
+    start: editableTranscript[index].start,
+    end: editableTranscript[index].end,
+    text: editableTranscript[index].text
+  };
+  parsed.text = editableTranscript.map((u) => u.text).join(' ');
 
   saveToLocalStorage(TRANSCRIPT_KEY, parsed);
   console.log(`Storage updated at index ${index}`);
@@ -559,14 +714,15 @@ async function handleTranscription() {
 
   // Revoke any other previous audio urls to free memory
   if (currentAudioUrl) {
-    // Clear the old audio from audioDB
-    clearAudioBlob();
-
-    URL.revokeObjectURL(currentAudioUrl);
+    URL.revokeObjectURL(currentAudioUrl); // release previous blob URL before assigning a new one
     currentAudioUrl = null;
   }
+  await clearAudioBlob(); // ensure previous persisted blob is removed before new upload source is set
+  transcriptAudio.pause();
+  transcriptAudio.removeAttribute('src');
+  transcriptAudio.load();
 
-  // UI CLEANUP: Reset the play button and slider
+  // UI CLEANUP: Reset the play button and slider here
   resetAudioUI();
   
   // Use uploadType || uploadData variables instead of re-fetching them
@@ -577,7 +733,6 @@ async function handleTranscription() {
     sizeInMB = uploadData.size / (1024 * 1024);
     audioSize.innerText = `${sizeInMB.toFixed(2)} MB`;
     uploadmetirc.innerText = `0 / ${sizeInMB.toFixed(2)} MB`;
-    // !IMPORTANT: replace 0 in uploadmetirc with actual file size uploaded
     
     if (sizeInMB >= 500) {
       alert('File too large. Maximum size is 500MB.');
@@ -603,6 +758,8 @@ async function handleTranscription() {
     
     
     if (!uploadData.startsWith('http://') && !uploadData.startsWith('https://')) {
+      // TODO: Show warning toasts here
+      showToast('Please enter a valid URL starting with http:// or https://', 'warning');
       urlDesc.innerHTML = 'Please enter a valid URL starting with <span class="highlight">http://</span> or <span class="highlight">https://</span>';
       return;
     }
@@ -615,7 +772,7 @@ async function handleTranscription() {
     transcriptAudio.src = uploadData;
     transcriptAudio.load();
   } else {
-    // todo: show toast (type="info")
+    showToast('Please select a file or enter a URL', 'info');
     urlDesc.innerHTML = 'Please select a file or enter a <span class="highlight">URL</span>';
     return;
   }
@@ -673,7 +830,7 @@ async function handleTranscription() {
 
       uploadStatus.innerText = 'Needs retry';
       uploadStatus.classList.add('failed');
-      updateState(projectSection, 'loaded');
+      updateState(projectSection, 'empty');
 
       showToast(
         reasonMessageMap[transcriptionResult.reason] || 'Transcription could not be completed for this audio.',
@@ -710,9 +867,7 @@ async function handleTranscription() {
       language_code: originalTranscript.language_code,
       id: originalTranscript.id,
       text: originalTranscript.text,
-      utterances: originalTranscript.utterances,
       speakers: originalTranscript.speakers,
-      words: originalTranscript.words,
       date: Date.now(),
       speakercount: `${uniqueSpeakers} Speaker${uniqueSpeakers > 1 ? 's' : ''}`,
 
@@ -730,28 +885,8 @@ async function handleTranscription() {
         words: [...]
         }]
         */
-    editableTranscript = session.utterances.map(
-      (utterance)=> {
-        return {
-          speaker: utterance.speaker,
-          start: utterance.start,
-          end: utterance.end,
-          text: utterance.text,
-          confidence: utterance.confidence,
-          words: utterance.words.map(
-            (word) => {
-               return {
-                text: word.text,
-                start: word.start,
-                end: word.end,
-                speaker: word.speaker,
-                confidence: word.confidence
-              }
-            }
-          )
-        }
-      }
-    )
+    editableTranscript = toEditableUtterances(originalTranscript.utterances);
+    session.utterances = editableTranscript;
     
     transcriptLanguage.innerText = `${session.language_code}`;
     speakerCount.innerText = session.speakercount;
@@ -765,8 +900,20 @@ async function handleTranscription() {
     renderTranscript(editableTranscript);
     updateState(projectSection, 'loaded');
     // Save the full session (including original transcript) to localStorage for persistence and future use in recordings section
-    saveToLocalStorage('originalTranscript', originalTranscript, showToast);
-    saveToLocalStorage(TRANSCRIPT_KEY, session, showToast);
+    try {
+      // Keep lightweight client metadata with canonical transcript for reliable restore reconciliation.
+      originalTranscript._client = {
+        title: session.title,
+        audio_size: session.audio_size,
+        date: session.date,
+        speakercount: session.speakercount
+      };
+      localStorage.setItem('originalTranscript', JSON.stringify(originalTranscript)); // write canonical transcript first
+      localStorage.setItem(TRANSCRIPT_KEY, JSON.stringify(buildSessionSnapshot(session, editableTranscript))); // then write compact UI snapshot
+      console.log('Transcription session saved to localStorage');
+    } catch (e) {
+      showToast('Failed to save transcript session', 'error');
+    }
 
     // Show success toast for UI feedback
     showToast('Transcription successful!', 'success')
