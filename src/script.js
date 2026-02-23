@@ -16,6 +16,7 @@ import './styles/queries.css'
 
 const TRANSCRIPT_KEY = 'auralis-transcript'
 const APP_VERSION = 'v1.5-1.00';
+const MIN_UPLOAD_DURATION = 2.5;
 const plan = document.querySelector('.plan');
 plan.innerText = `Beta - ${APP_VERSION}`
 console.log('Vite is Running Script!');
@@ -298,7 +299,7 @@ function updateState(element, state) {
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Show toast Utility
-export function showToast(msg, type = 'info', duration = 4500) {
+export function showToast(msg, type = 'info', duration = 4500, cta = null) {
   // Create or get toast container
   let container = document.querySelector('.toast-container');
   if (!container) {
@@ -326,12 +327,37 @@ export function showToast(msg, type = 'info', duration = 4500) {
   
   // Append message to toast
   toast.appendChild(message);
+
+  if (cta && typeof cta.label === 'string' && typeof cta.callback === 'function') {
+    const ctaButton = document.createElement('button');
+    ctaButton.type = 'button';
+    ctaButton.classList.add('btn', 'toast-cta');
+    ctaButton.innerText = cta.label;
+    ctaButton.addEventListener('click', () => {
+      try {
+        cta.callback();
+      } catch (error) {
+        console.error('Toast CTA callback failed:', error);
+      }
+
+      toast.classList.add('removing');
+      setTimeout(() => {
+        toast.remove();
+        if (container.children.length === 0) {
+          container.remove();
+        }
+      }, 300);
+    });
+    toast.appendChild(ctaButton);
+  }
   
   // Append toast to container
   container.appendChild(toast);
   lucide.createIcons(); // Render icon in new toasts
   console.log(container)
   window.container = container; // Expose for debugging 
+
+  const dismissDelay = cta ? Math.max(duration, 12000) : duration;
 
   // Auto-dismiss after .removing animation duration in./styles/utils.js 
   setTimeout(() => {
@@ -344,7 +370,7 @@ export function showToast(msg, type = 'info', duration = 4500) {
         container.remove();
       }
     }, 300); // Match animation duration
-  }, duration);
+  }, dismissDelay);
   
   console.log(`Toast: ${msg} (${type})`);
 }
@@ -777,8 +803,48 @@ async function handleTranscription() {
     return;
   }
 
+  await runAttempt(uploadType, uploadData);
+}
+
+async function resolveUploadDuration(uploadType, uploadData) {
+  if (uploadType !== 'file') return null;
+
+  const fromElement = Number.isFinite(transcriptAudio.duration) && transcriptAudio.duration > 0
+    ? transcriptAudio.duration
+    : null;
+  if (fromElement != null) return fromElement;
+
+  try {
+    const decodeTimeoutMs = 1500;
+    const decodedDuration = await Promise.race([
+      uploadData.arrayBuffer().then(async (buffer) => {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return null;
+
+        const context = new AudioCtx();
+        try {
+          const decoded = await context.decodeAudioData(buffer.slice(0));
+          return Number.isFinite(decoded.duration) && decoded.duration > 0 ? decoded.duration : null;
+        } finally {
+          await context.close();
+        }
+      }),
+      new Promise((resolve) => setTimeout(() => resolve(null), decodeTimeoutMs))
+    ]);
+
+    return decodedDuration;
+  } catch (error) {
+    return null;
+  }
+}
+
+async function runAttempt(uploadType, uploadData) {
+  if (isProcessing) return;
+  lockUploadUI();
+
   const start = Date.now();
-  const MIN_DISPLAY_TIME = 2500; 
+  const MIN_DISPLAY_TIME = 2500;
+  const hadTranscriptBeforeAttempt = Array.isArray(editableTranscript) && editableTranscript.length > 0;
 
   try {
 
@@ -799,14 +865,19 @@ async function handleTranscription() {
     uploadStatus.classList.remove('failed');
     file.innerText = `${uploadType === 'file' ? uploadData.name : uploadData}...`;
 
+    const fileDuration = await resolveUploadDuration(uploadType, uploadData);
+    if (uploadType === 'file' && Number.isFinite(fileDuration) && fileDuration < MIN_UPLOAD_DURATION) {
+      console.debug('duration-check', { duration: fileDuration, blocked: true });
+      showToast('Clip too short — minimum 2.5 seconds.', 'warning');
+      updateState(projectSection, hadTranscriptBeforeAttempt ? 'loaded' : 'empty');
+      return;
+    }
+
     updateState(projectSection, 'loading');
     projectTab.click();
     // Start fake progress here
     startFakeProgress(uploadType === 'file' ? uploadData.size / (1024 * 1024) : null); 
 
-    const fileDuration = Number.isFinite(transcriptAudio.duration) && transcriptAudio.duration > 0
-      ? transcriptAudio.duration
-      : null;
     const transcriptionResult = await uploadAndTranscribe(uploadType, uploadData, fileDuration);
 
     finishProgress();
@@ -820,27 +891,29 @@ async function handleTranscription() {
     // We check `ok` before touching transcript fields to prevent undefined access crashes.
     if (!transcriptionResult.ok || !transcriptionResult.transcript) {
       const reasonMessageMap = {
-        no_speech_detected: 'No speech detected. Try a clearer speech recording.',
-        low_quality_transcript: 'Transcript quality is low. Try a clearer speech recording.',
-        invalid_upload_type: 'Upload type is invalid. Please try again.',
-        insufficient_speech: 'Not enough speech detected...',
-        low_confidence: 'Transcript confidence is low...',
-        low_speech_density: 'Speech density too low (likely music or silence)...'
+        no_speech_detected: 'No clear speech detected — try a different clip.',
+        low_confidence: 'Low confidence transcript — try again.'
       };
 
       uploadStatus.innerText = 'Needs retry';
       uploadStatus.classList.add('failed');
-      updateState(projectSection, 'empty');
+      updateState(projectSection, hadTranscriptBeforeAttempt ? 'loaded' : 'empty');
 
       showToast(
-        reasonMessageMap[transcriptionResult.reason] || 'Transcription could not be completed for this audio.',
-        'warning'
+        reasonMessageMap[transcriptionResult.reason] || 'Transcription failed — please retry.',
+        'warning',
+        4500,
+        {
+          label: 'Retry',
+          callback: () => {
+            console.debug('retry-action');
+            runAttempt(uploadType, uploadData);
+          }
+        }
       );
 
       const transcriptTab = document.querySelector('.nav-link[data-id="transcription"]');
       transcriptTab.click();
-      // re-enable upload UI so user can retry
-      unlockUploadUI();
       return;
     }
 
@@ -852,9 +925,8 @@ async function handleTranscription() {
     if (!Array.isArray(originalTranscript.utterances)) {
       uploadStatus.innerText = 'Needs retry';
       uploadStatus.classList.add('failed');
-      updateState(projectSection, 'loaded');
+      updateState(projectSection, hadTranscriptBeforeAttempt ? 'loaded' : 'empty');
       showToast('Transcription could not be completed for this audio.', 'warning');
-      unlockUploadUI();
       return;
     }
    
@@ -1055,7 +1127,6 @@ audioInput.addEventListener('change', () => {
   if (isProcessing) return; // ← guard
   if (audioInput.files && audioInput.files[0]) {
     label.innerText = 'Uploading...';
-    lockUploadUI(); // ← lock both
     setTimeout(() => { handleTranscription(); }, 2000);
   }
 });
@@ -1064,7 +1135,6 @@ urlUploadBtn.addEventListener('click', () => {
   if (isProcessing) return; // ← guard
   if (urlInput.value.trim()) {
     urlUploadBtn.innerText = 'Uploading...';
-    lockUploadUI(); // ← lock both
     setTimeout(() => { handleTranscription(); }, 2000);
   } else {
     handleTranscription();
@@ -1462,6 +1532,7 @@ urlButton.addEventListener("click", ()=> {
   toggleClass(dock, 'show-url-box')
   toggleClass(btn, 'url-toggle')
 })
+
 
 
 

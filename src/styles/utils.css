@@ -124,6 +124,10 @@ label[for="audio-input"].is-disabled {
   animation: slideIn 0.3s var(--ease-out) forwards;
   transition: all var(--duration-normal) var(--ease-standard);
 }
+.toast-cta{
+  align-self: flex-start;
+}
+
 .toast .icon{
   flex-shrink: 0;
   border-radius: 50%;
