@@ -36,7 +36,7 @@ function looksLikeGibberish(text) {
   return ratio > 0.20;
 }
 
-export async function uploadAndTranscribe(type, data, fileDuration = null) {
+export async function uploadAndTranscribe(type, data, fileDuration = null, language = null) {
   const emptyMetrics = {
     wordCount: 0,
     avgConfidence: null,
@@ -50,10 +50,13 @@ export async function uploadAndTranscribe(type, data, fileDuration = null) {
     if (type === 'file') {
       const formData = new FormData();
       formData.append('audio', data);
+      if (language !== null && language !== undefined) {
+        formData.append('language', language);
+      }
       body = formData;
       console.log(`Uploading file: ${data.name} , ${data.type} (${data.type})...`);
     } else if (type === 'url') {
-      body = JSON.stringify({ audioUrl: data });
+      body = JSON.stringify({ audioUrl: data, language });
       headers['Content-Type'] = 'application/json';
       console.log(`Sending URL: ${data}...`);
     } else {

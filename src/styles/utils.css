@@ -126,6 +126,9 @@ label[for="audio-input"].is-disabled {
 }
 .toast-cta{
   align-self: flex-start;
+  display: block;
+  margin-top: 10px;
+  text-decoration: underline;
 }
 
 .toast .icon{

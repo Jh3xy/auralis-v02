@@ -52,6 +52,8 @@ app.post('/api/upload', upload.single('audio'), async (req, res) => {
   
   try {
     let audioSource;
+    const requestedLanguage = req.body?.language ?? null;
+    console.debug('received-language', requestedLanguage);
     
     // Check if file was uploaded
     if (req.file) {
@@ -84,20 +86,32 @@ app.post('/api/upload', upload.single('audio'), async (req, res) => {
     
     // Request transcription (same for both file and URL)
     console.log('Requesting transcription...');
-    const transcript = await client.transcripts.transcribe({
-    audio: audioSource,
-    speaker_labels: true,     // enable speaker diarization
-    format_text: true,        // punctuation + capitalization / cleaned text
-    // language_detection: true // auto language detection (if not specified)
-    language_code: 'en', //Force english
+    const transcriptionOptions = {
+      audio: audioSource,
+      speaker_labels: true,     // enable speaker diarization
+      format_text: true,        // punctuation + capitalization / cleaned text
 
-    // other useful options you can toggle:
-    // auto_chapters: true,      // creates chapter objects with start/end + summary
-    // auto_highlights: true,    // generates highlight snippets
-    // punctuate: true,          // explicit punctuation option (if available)
-    // entity_detection: true,   // named entity info
-    // disfluencies: false       // remove filler words if true/false depending on API version
-  });
+      // other useful options you can toggle:
+      // auto_chapters: true,      // creates chapter objects with start/end + summary
+      // auto_highlights: true,    // generates highlight snippets
+      // punctuate: true,          // explicit punctuation option (if available)
+      // entity_detection: true,   // named entity info
+      // disfluencies: false       // remove filler words if true/false depending on API version
+    };
+
+    if (requestedLanguage === 'auto') {
+      transcriptionOptions.language_detection = true;
+    } else {
+      // Preserve existing default behavior for missing/unknown values.
+      transcriptionOptions.language_code = 'en';
+    }
+
+    if (requestedLanguage === 'en') {
+      transcriptionOptions.language_code = 'en';
+      delete transcriptionOptions.language_detection;
+    }
+
+    const transcript = await client.transcripts.transcribe(transcriptionOptions);
     
     // Check status
     if (transcript.status === 'error') {

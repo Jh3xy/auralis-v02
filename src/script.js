@@ -17,6 +17,8 @@ import './styles/queries.css'
 const TRANSCRIPT_KEY = 'auralis-transcript'
 const APP_VERSION = 'v1.5-1.00';
 const MIN_UPLOAD_DURATION = 2.5;
+const SETTINGS_KEY = 'AURALIS_SETTINGS';
+const defaultSettings = { language: 'en' };
 const plan = document.querySelector('.plan');
 plan.innerText = `Beta - ${APP_VERSION}`
 console.log('Vite is Running Script!');
@@ -205,6 +207,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.warn('Could not find current section')
   }
 
+  // Initialize settings controls regardless of transcript restore state.
+  initSettingsUI();
+
 
   
   const savedOriginalRaw = localStorage.getItem('originalTranscript');
@@ -297,6 +302,44 @@ function updateState(element, state) {
 // Wait promise for enforcng mimimum dispay time
 // This creates a "pause" that doesn't freeze the browser and ensures UI states are intentional
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Settings manager (stage 1): local persistence only.
+function loadSettings() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+    return { ...defaultSettings, ...parsed };
+  } catch (error) {
+    console.warn('Failed to parse saved settings. Falling back to defaults.', error);
+    return { ...defaultSettings };
+  }
+}
+
+function saveSettings(settings) {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+
+function getSetting(key) {
+  return loadSettings()[key];
+}
+
+function setSetting(key, value) {
+  const nextSettings = { ...loadSettings(), [key]: value };
+  saveSettings(nextSettings);
+  return nextSettings;
+}
+
+function initSettingsUI() {
+  const languageSelect = document.getElementById('setting-language');
+  if (!languageSelect) return;
+
+  const savedLanguage = getSetting('language');
+  languageSelect.value = savedLanguage === 'auto' ? 'auto' : 'en';
+
+  languageSelect.addEventListener('change', (event) => {
+    const nextValue = event.target.value === 'auto' ? 'auto' : 'en';
+    setSetting('language', nextValue);
+  });
+}
 
 // Show toast Utility
 export function showToast(msg, type = 'info', duration = 4500, cta = null) {
@@ -878,7 +921,9 @@ async function runAttempt(uploadType, uploadData) {
     // Start fake progress here
     startFakeProgress(uploadType === 'file' ? uploadData.size / (1024 * 1024) : null); 
 
-    const transcriptionResult = await uploadAndTranscribe(uploadType, uploadData, fileDuration);
+    const language = getSetting('language') || 'en';
+    console.debug('submit-language', language);
+    const transcriptionResult = await uploadAndTranscribe(uploadType, uploadData, fileDuration, language);
 
     finishProgress();
 

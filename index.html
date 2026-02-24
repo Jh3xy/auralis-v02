@@ -339,7 +339,7 @@
           <nav>
             <ul class="flex flex-col gap-2">
               <!-- Removed settings btn for comment in secondary nav in preparation for language toggle and other settings in new settings page ot be created  -->
-              <li class="nav-link">
+              <li class="nav-link" data-id="settings">
                 <button  class="link flex gap-3 items-center">
                   <i data-lucide="settings"></i>
                   Settings
@@ -608,6 +608,21 @@
         </section>
         <section id="templates" class="section flex-center templates">
           <h1>Templates Section</h1>
+        </section>
+        <section id="settings" class="section settings">
+          <div class="wrap">
+            <div class="flex flex-col gap-4">
+              <h2>Settings</h2>
+              <div class="card setting">
+                <label for="setting-language">Language</label>
+                <select id="setting-language" class="url-audio-input">
+                  <option value="en">English</option>
+                  <option value="auto">Auto Detect</option>
+                </select>
+                <p class="sub-text">Choose language mode for future transcriptions.</p>
+              </div>
+            </div>
+          </div>
         </section>
         <section id="analytics" class="section analytics">
           <div class="wrap">
