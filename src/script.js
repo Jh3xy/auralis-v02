@@ -46,8 +46,112 @@ let originalTranscript = null // store original transcript result - Full API res
 let editableTranscript = null // store editable transcript result - Array of utternaces from API result object
 let hasClicked = false;
 let sizeInMB;
+let elapsedIntervalId = null;
+let elapsedStartedAt = null;
+let loadingCopyIntervalId = null;
 
 const transcriptAudio = document.getElementById('audio-engine');
+
+function restoreAudioFromIndexedDBForPlayer() {
+  return getAudioBlob().then((savedBlob) => {
+    if (savedBlob) {
+      const src = URL.createObjectURL(savedBlob);
+      currentAudioUrl = src;
+      transcriptAudio.crossOrigin = 'anonymous';
+      transcriptAudio.preload = 'metadata';
+      transcriptAudio.src = src;
+      transcriptAudio.load();
+      document.querySelector('.audio-player').classList.remove('is-disabled');
+      return true;
+    }
+
+    document.querySelector('.audio-player').classList.add('is-disabled');
+    return false;
+  });
+}
+
+function applyLoadingMeta(meta = {}) {
+  const fileEl = document.querySelector('.file.loading-sub-text');
+  const uploadMetricEl = document.querySelector('.upload-metric');
+  const uploadStatusEl = document.querySelector('.state');
+  const transcriptTitle = document.querySelector('.transcript-title');
+  const audioName = document.querySelector('.audio-name');
+  const audioSizeEl = document.querySelector('.audio-size');
+
+  const resolvedName = meta.fileName || 'Processing audio...';
+  const resolvedSizeText = meta.fileSizeText || '--';
+
+  if (fileEl) fileEl.innerText = `${resolvedName}...`;
+  if (uploadMetricEl) uploadMetricEl.innerText = resolvedSizeText;
+  if (uploadStatusEl) {
+    uploadStatusEl.innerText = 'Active';
+    uploadStatusEl.classList.remove('failed');
+  }
+  if (transcriptTitle) transcriptTitle.innerText = resolvedName;
+  if (audioName) audioName.innerText = `${resolvedName}...`;
+  if (audioSizeEl) {
+    audioSizeEl.innerText = meta.uploadType === 'file' ? resolvedSizeText : '--';
+  }
+}
+
+function formatElapsed(ms) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function startElapsedTimer(startedAt = Date.now()) {
+  const percentage = document.querySelector('.percentage');
+  if (!percentage) return;
+
+  stopElapsedTimer();
+  elapsedStartedAt = Number.isFinite(startedAt) ? startedAt : Date.now();
+
+  const tick = () => {
+    percentage.innerText = formatElapsed(Date.now() - elapsedStartedAt);
+  };
+
+  tick();
+  elapsedIntervalId = setInterval(tick, 1000);
+}
+
+function stopElapsedTimer() {
+  if (elapsedIntervalId) {
+    clearInterval(elapsedIntervalId);
+    elapsedIntervalId = null;
+  }
+  elapsedStartedAt = null;
+}
+
+function startLoadingCopyRotation() {
+  const loadingDesc = document.querySelector('.loading-desc');
+  if (!loadingDesc) return;
+
+  const messages = [
+    'Receiving your audio...',
+    'Auralis is tuning in...',
+    'Picking up the voices...',
+    'Mapping the conversation...',
+    'Putting words to speech...'
+  ];
+
+  stopLoadingCopyRotation();
+
+  let index = 0;
+  loadingDesc.innerText = messages[index];
+  loadingCopyIntervalId = setInterval(() => {
+    index = (index + 1) % messages.length;
+    loadingDesc.innerText = messages[index];
+  }, 3500);
+}
+
+function stopLoadingCopyRotation() {
+  if (loadingCopyIntervalId) {
+    clearInterval(loadingCopyIntervalId);
+    loadingCopyIntervalId = null;
+  }
+}
 
 function toEditableUtterances(utterances = []) {
   return utterances.map((utterance) => ({
@@ -217,21 +321,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     lockUploadUI();
     const projectSection = document.getElementById('projects');
     const projectTab = document.querySelector('.nav-link[data-id="projects"]');
+    await restoreAudioFromIndexedDBForPlayer();
+    applyLoadingMeta(activeJob);
     updateState(projectSection, 'loading');
     projectTab?.click();
+    startElapsedTimer(activeJob.startedAt ?? Date.now());
+    startLoadingCopyRotation();
     startPolling(activeJob.jobId, {
       uploadType: activeJob.uploadType || null,
       uploadData: null,
       fileDuration: activeJob.fileDuration ?? null,
       startedAt: activeJob.startedAt ?? Date.now()
     });
+    return;
   }
 
 
   
   const savedOriginalRaw = localStorage.getItem('originalTranscript');
   const savedData = localStorage.getItem(TRANSCRIPT_KEY);
-  if (!savedData && !savedOriginalRaw) return;
+  if (!savedData && !savedOriginalRaw) {
+    updateState(document.getElementById('projects'), 'empty');
+    return;
+  }
 
   const projectSection = document.getElementById('projects');
   const savedOriginal = savedOriginalRaw ? JSON.parse(savedOriginalRaw) : null;
@@ -289,29 +401,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   showToast('Previous session restored', 'info');
 
 
-  // Try to restore the audio too
-  const savedBlob = await getAudioBlob();
-  if (savedBlob) {
-    const src = URL.createObjectURL(savedBlob);
-    currentAudioUrl = src;
-    transcriptAudio.crossOrigin = 'anonymous';
-    transcriptAudio.preload = 'metadata';
-    transcriptAudio.src = src;
-    transcriptAudio.load();
-
-    // Enable the audio player UI since we have audio
-    document.querySelector('.audio-player').classList.remove('is-disabled');
-    console.log('Audio restored from IndexedDB');
-  } else {
-    // No audio saved (URL upload or first visit) - keep player disabled
-    document.querySelector('.audio-player').classList.add('is-disabled');
-  }
+  await restoreAudioFromIndexedDBForPlayer();
+  console.log('Previous session restore completed');
 });
 
 
 // Function to set UI states
 function updateState(element, state) {
-  const states = ['loading', 'loaded'];
+  const states = ['empty', 'loading', 'loaded'];
   element.classList.remove(...states)
   element.classList.add(state)
 }
@@ -723,62 +820,6 @@ function cancelEdit(index) {
   updateTranscriptState(index, 'normal');
 }
 
-let progressInterval = null; // global progress variable for fake loading progress
-
-function startFakeProgress() {
-  const uploadMetric = document.querySelector('.upload-metric'); //
-  const percentage = document.querySelector('.percentage');
-  
-  // Stages: [target%, label, duration to reach it in ms]
-  const stages = [
-    { target: 12, label: 'Receiving your audio...', duration: 1500 },
-    { target: 35, label: 'Auralis is tuning in...', duration: 2000 },
-    { target: 55, label: 'Picking up the voices...', duration: 3000 },
-    { target: 72, label: 'Mapping the conversation...', duration: 4000 },
-    { target: 88, label: 'Putting words to speech...', duration: 5000 },
-    { target: 92, label: 'Transcript almost ready...', duration: 8000 },
-  ];
-
-  let current = 0;
-  let stageIndex = 0;
-  const loadingDesc = document.querySelector('.loading-desc');
-
-  // Clear any existing interval
-  if (progressInterval) clearInterval(progressInterval);
-
-  progressInterval = setInterval(() => {
-    if (sizeInMB && uploadMetric) {
-      const uploaded = (sizeInMB * (current / 100)).toFixed(1);
-      uploadMetric.innerText = `${uploaded} / ${sizeInMB.toFixed(2)} MB`;
-    }
-    const stage = stages[stageIndex];
-    if (!stage) return; // stay at 92% until done
-
-    if (current < stage.target) {
-      current += 0.5; // increment slowly
-      percentage.innerText = `${Math.floor(current)}%`;
-      
-      if (loadingDesc) loadingDesc.innerText = stage.label;
-    } else {
-      stageIndex++; // move to next stage
-    }
-  }, 400); // runs every 400ms
-}
-
-function finishProgress() {
-  if (progressInterval) {
-    clearInterval(progressInterval);
-    progressInterval = null;
-  }
-  const percentage = document.querySelector('.percentage');
-  const loadingDesc = document.querySelector('.loading-desc');
-  
-  percentage.innerText = '100%';
-  if (loadingDesc) loadingDesc.innerText = 'Transcription complete!';
-}
-
-
-
 const audioInput = document.getElementById('audio-input');
 const urlInput = document.getElementById('url-audio-input');
 const urlUploadBtn = document.querySelector('.url-upload-btn.dock-btn');
@@ -803,7 +844,6 @@ async function handleTranscription() {
     URL.revokeObjectURL(currentAudioUrl); // release previous blob URL before assigning a new one
     currentAudioUrl = null;
   }
-  await clearAudioBlob(); // ensure previous persisted blob is removed before new upload source is set
   transcriptAudio.pause();
   transcriptAudio.removeAttribute('src');
   transcriptAudio.load();
@@ -818,7 +858,7 @@ async function handleTranscription() {
     console.log(`File type: ${uploadData.type}`)
     sizeInMB = uploadData.size / (1024 * 1024);
     audioSize.innerText = `${sizeInMB.toFixed(2)} MB`;
-    uploadmetirc.innerText = `0 / ${sizeInMB.toFixed(2)} MB`;
+    uploadmetirc.innerText = `${sizeInMB.toFixed(2)} MB`;
     
     if (sizeInMB >= 500) {
       alert('File too large. Maximum size is 500MB.');
@@ -827,6 +867,7 @@ async function handleTranscription() {
     
     audioplayer.classList.remove('is-disabled');
     
+    await clearAudioBlob(); // clear previous persisted blob only after new file validation passes
     // Update Audio player in transcript
     const src = URL.createObjectURL(uploadData); // create a new src for audio element
     currentAudioUrl = src;  
@@ -851,7 +892,8 @@ async function handleTranscription() {
     }
     
     audioplayer.classList.add('is-disabled');
-    uploadmetirc.innerText = `-- / --`;
+    await clearAudioBlob(); // clear previous persisted blob only after URL validation passes
+    uploadmetirc.innerText = `--`;
 
     transcriptAudio.crossOrigin = 'anonymous';
     transcriptAudio.preload = 'metadata';
@@ -943,6 +985,8 @@ function getFailureMessage(reason) {
 }
 
 function showRetryToast(reason, uploadType, uploadData) {
+  stopElapsedTimer();
+  stopLoadingCopyRotation();
   uploadStatus.innerText = 'Needs retry';
   uploadStatus.classList.add('failed');
   const hasTranscriptNow = Array.isArray(editableTranscript) && editableTranscript.length > 0;
@@ -1067,7 +1111,8 @@ async function startPolling(jobId, context = {}) {
       const contextSnapshot = pollingContext;
       stopPolling();
       clearActiveJob();
-      finishProgress();
+      stopElapsedTimer();
+      stopLoadingCopyRotation();
 
       if (payload.status === 'completed') {
         const completed = applyTranscriptSuccess(
@@ -1090,7 +1135,8 @@ async function startPolling(jobId, context = {}) {
       const contextSnapshot = pollingContext;
       stopPolling();
       clearActiveJob();
-      finishProgress();
+      stopElapsedTimer();
+      stopLoadingCopyRotation();
       showRetryToast('default', contextSnapshot?.uploadType, contextSnapshot?.uploadData);
       unlockUploadUI();
     } finally {
@@ -1137,7 +1183,8 @@ async function runAttempt(uploadType, uploadData) {
 
     updateState(projectSection, 'loading');
     projectTab.click();
-    startFakeProgress(uploadType === 'file' ? uploadData.size / (1024 * 1024) : null);
+    startElapsedTimer(Date.now());
+    startLoadingCopyRotation();
 
     const language = getSetting('language') || 'en';
     console.debug('submit-language', language);
@@ -1150,22 +1197,31 @@ async function runAttempt(uploadType, uploadData) {
 
     const jobPayload = uploadResponse?.transcript || uploadResponse || null;
     if (!jobPayload?.jobId || jobPayload.status !== 'processing') {
-      finishProgress();
+      stopElapsedTimer();
+      stopLoadingCopyRotation();
       showRetryToast(uploadResponse?.reason, uploadType, uploadData);
       return;
     }
+
+    const fileSizeText = uploadType === 'file' && uploadData?.size
+      ? `${(uploadData.size / (1024 * 1024)).toFixed(2)} MB`
+      : '--';
 
     writeActiveJob({
       jobId: jobPayload.jobId,
       uploadType,
       fileDuration,
-      startedAt: Date.now()
+      startedAt: elapsedStartedAt ?? Date.now(),
+      fileName: uploadType === 'file' ? (uploadData?.name || 'Uploaded Audio') : uploadData,
+      fileSizeText
     });
 
     keepLockedForPolling = true;
     await startPolling(jobPayload.jobId, { uploadType, uploadData, fileDuration });
   } catch (error) {
     console.error('Failed to transcribe:', error);
+    stopElapsedTimer();
+    stopLoadingCopyRotation();
     uploadStatus.innerText = 'Failed';
     uploadStatus.classList.add('failed');
 

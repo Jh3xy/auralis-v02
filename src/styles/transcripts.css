@@ -4,6 +4,13 @@
 .app-grid main section.show.loaded {
   display: block;
 }
+.header-copy{
+  display: block;
+  font-size: 11px;
+  line-height: 1.1;
+  text-transform: none;
+  margin-top: 1rem;
+}
 .transcript-state{
   padding: 1rem 2.5rem;
 }
@@ -257,8 +264,8 @@ input[type="range"]::-moz-range-thumb {
   opacity: 0.8;
 }
 .edit-controls [data-lucide] {
-  width: 15px;
-  height: 15px;
+  width: 18px;
+  height: 18px;
 }
 .edit-controls .btn:hover{
   color: var(--text-main);
