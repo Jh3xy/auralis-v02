@@ -17,8 +17,10 @@ import './styles/queries.css'
 const TRANSCRIPT_KEY = 'auralis-transcript'
 const APP_VERSION = 'v1.5-1.00';
 const MIN_UPLOAD_DURATION = 2.5;
+const ACTIVE_JOB_KEY = 'active-transcription-job';
 const SETTINGS_KEY = 'AURALIS_SETTINGS';
 const defaultSettings = { language: 'en' };
+const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 const plan = document.querySelector('.plan');
 plan.innerText = `Beta - ${APP_VERSION}`
 console.log('Vite is Running Script!');
@@ -209,6 +211,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Initialize settings controls regardless of transcript restore state.
   initSettingsUI();
+
+  const activeJob = readActiveJob();
+  if (activeJob?.jobId) {
+    lockUploadUI();
+    const projectSection = document.getElementById('projects');
+    const projectTab = document.querySelector('.nav-link[data-id="projects"]');
+    updateState(projectSection, 'loading');
+    projectTab?.click();
+    startPolling(activeJob.jobId, {
+      uploadType: activeJob.uploadType || null,
+      uploadData: null,
+      fileDuration: activeJob.fileDuration ?? null,
+      startedAt: activeJob.startedAt ?? Date.now()
+    });
+  }
 
 
   
@@ -881,24 +898,225 @@ async function resolveUploadDuration(uploadType, uploadData) {
   }
 }
 
+let pollingIntervalId = null;
+let pollingInFlight = false;
+let pollingJobId = null;
+let pollingContext = null;
+
+function readActiveJob() {
+  try {
+    const raw = localStorage.getItem(ACTIVE_JOB_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (error) {
+    console.warn('Failed to parse active job state:', error);
+    localStorage.removeItem(ACTIVE_JOB_KEY);
+    return null;
+  }
+}
+
+function writeActiveJob(activeJob) {
+  localStorage.setItem(ACTIVE_JOB_KEY, JSON.stringify(activeJob));
+}
+
+function clearActiveJob() {
+  localStorage.removeItem(ACTIVE_JOB_KEY);
+}
+
+function stopPolling() {
+  if (pollingIntervalId) {
+    clearInterval(pollingIntervalId);
+    pollingIntervalId = null;
+  }
+  pollingInFlight = false;
+  pollingJobId = null;
+  pollingContext = null;
+}
+
+function getFailureMessage(reason) {
+  const reasonMessageMap = {
+    no_speech_detected: 'No clear speech detected — try a different clip.',
+    low_confidence: 'Low confidence transcript — try again.'
+  };
+
+  return reasonMessageMap[reason] || 'Transcription failed — please retry.';
+}
+
+function showRetryToast(reason, uploadType, uploadData) {
+  uploadStatus.innerText = 'Needs retry';
+  uploadStatus.classList.add('failed');
+  const hasTranscriptNow = Array.isArray(editableTranscript) && editableTranscript.length > 0;
+  const projectSection = document.getElementById('projects');
+  updateState(projectSection, hasTranscriptNow ? 'loaded' : 'empty');
+
+  showToast(
+    getFailureMessage(reason),
+    'warning',
+    4500,
+    {
+      label: 'Retry',
+      callback: () => {
+        console.debug('retry-action');
+        clearActiveJob();
+        if (uploadType && uploadData) {
+          runAttempt(uploadType, uploadData);
+        } else {
+          showToast('Please submit the audio again to retry.', 'info');
+        }
+      }
+    }
+  );
+
+  const transcriptTab = document.querySelector('.nav-link[data-id="transcription"]');
+  transcriptTab?.click();
+}
+
+function applyTranscriptSuccess(result, uploadType, uploadData) {
+  utterances = result.utterances;
+  window.transcriptResult = result; // Expose result for debugging
+  originalTranscript = result; // Set original copy of API response
+
+  if (!Array.isArray(originalTranscript.utterances)) {
+    uploadStatus.innerText = 'Needs retry';
+    uploadStatus.classList.add('failed');
+    const hasTranscriptNow = Array.isArray(editableTranscript) && editableTranscript.length > 0;
+    const projectSection = document.getElementById('projects');
+    updateState(projectSection, hasTranscriptNow ? 'loaded' : 'empty');
+    showToast('Transcription could not be completed for this audio.', 'warning');
+    return false;
+  }
+
+  const transcriptLanguage = document.querySelector('.lang');
+  const audioDuration = document.querySelector('.audio-duration');
+  const transcriptTitle = document.querySelector('.transcript-title');
+  const audioName = document.querySelector('.audio-name');
+
+  const resolvedTitle = uploadType === 'file'
+    ? (uploadData?.name || 'Uploaded Audio')
+    : (typeof uploadData === 'string' && uploadData ? uploadData : 'Audio URL');
+  const resolvedSize = uploadType === 'file' && uploadData?.size
+    ? `${(uploadData.size / (1024 * 1024)).toFixed(2)} MB`
+    : '--';
+
+  const uniqueSpeakers = new Set(originalTranscript.utterances.map(u => u.speaker)).size;
+
+  session = {
+    audio_duration: originalTranscript.audio_duration,
+    confidence: originalTranscript.confidence,
+    language_code: originalTranscript.language_code,
+    id: originalTranscript.id,
+    text: originalTranscript.text,
+    speakers: originalTranscript.speakers,
+    date: Date.now(),
+    speakercount: `${uniqueSpeakers} Speaker${uniqueSpeakers > 1 ? 's' : ''}`,
+    title: resolvedTitle,
+    audio_size: resolvedSize,
+  };
+
+  editableTranscript = toEditableUtterances(originalTranscript.utterances);
+  session.utterances = editableTranscript;
+
+  transcriptLanguage.innerText = `${session.language_code}`;
+  speakerCount.innerText = session.speakercount;
+  audioDuration.innerText = formatTime(session.audio_duration * 1000);
+  transcriptTitle.innerText = resolvedTitle;
+  audioName.innerText = `${resolvedTitle}...`;
+
+  renderTranscript(editableTranscript);
+  updateState(document.getElementById('projects'), 'loaded');
+
+  try {
+    originalTranscript._client = {
+      title: session.title,
+      audio_size: session.audio_size,
+      date: session.date,
+      speakercount: session.speakercount
+    };
+    localStorage.setItem('originalTranscript', JSON.stringify(originalTranscript));
+    localStorage.setItem(TRANSCRIPT_KEY, JSON.stringify(buildSessionSnapshot(session, editableTranscript)));
+    console.log('Transcription session saved to localStorage');
+  } catch (e) {
+    showToast('Failed to save transcript session', 'error');
+  }
+
+  showToast('Transcription successful!', 'success');
+  return true;
+}
+
+async function startPolling(jobId, context = {}) {
+  if (!jobId) return;
+  if (pollingJobId === jobId && pollingIntervalId) return;
+
+  stopPolling();
+  pollingJobId = jobId;
+  pollingContext = context;
+
+  const pollOnce = async () => {
+    if (pollingInFlight) return;
+    pollingInFlight = true;
+
+    try {
+      const response = await fetch(`${API_BASE}/api/jobs/${encodeURIComponent(jobId)}`);
+      if (!response.ok) {
+        throw new Error(`Polling failed with status ${response.status}`);
+      }
+
+      const payload = await response.json();
+      if (payload.status === 'processing') return;
+
+      const contextSnapshot = pollingContext;
+      stopPolling();
+      clearActiveJob();
+      finishProgress();
+
+      if (payload.status === 'completed') {
+        const completed = applyTranscriptSuccess(
+          payload.transcript,
+          contextSnapshot?.uploadType,
+          contextSnapshot?.uploadData
+        );
+        if (!completed) {
+          showRetryToast('default', contextSnapshot?.uploadType, contextSnapshot?.uploadData);
+        }
+      } else if (payload.status === 'failed') {
+        showRetryToast('default', contextSnapshot?.uploadType, contextSnapshot?.uploadData);
+      } else {
+        showRetryToast('default', contextSnapshot?.uploadType, contextSnapshot?.uploadData);
+      }
+
+      unlockUploadUI();
+    } catch (error) {
+      console.error('Polling error:', error);
+      const contextSnapshot = pollingContext;
+      stopPolling();
+      clearActiveJob();
+      finishProgress();
+      showRetryToast('default', contextSnapshot?.uploadType, contextSnapshot?.uploadData);
+      unlockUploadUI();
+    } finally {
+      pollingInFlight = false;
+    }
+  };
+
+  await pollOnce();
+  pollingIntervalId = setInterval(pollOnce, 2000);
+}
+
 async function runAttempt(uploadType, uploadData) {
   if (isProcessing) return;
   lockUploadUI();
 
   const start = Date.now();
   const MIN_DISPLAY_TIME = 2500;
-  const hadTranscriptBeforeAttempt = Array.isArray(editableTranscript) && editableTranscript.length > 0;
+  let keepLockedForPolling = false;
 
   try {
-
     const projectSection = document.getElementById('projects');
     const projectTab = document.querySelector('.nav-link[data-id="projects"]');
     const file = document.querySelector('.file.loading-sub-text');
     const transcriptTitle = document.querySelector('.transcript-title');
     const audioName = document.querySelector('.audio-name');
-    const audioDuration = document.querySelector('.audio-duration');
     const transcriptDate = document.querySelector('.current-date');
-    const transcriptLanguage = document.querySelector('.lang');
 
     // UI Prep
     transcriptTitle.innerText = `${uploadType === 'file' ? uploadData.name : uploadData}`;
@@ -911,145 +1129,55 @@ async function runAttempt(uploadType, uploadData) {
     const fileDuration = await resolveUploadDuration(uploadType, uploadData);
     if (uploadType === 'file' && Number.isFinite(fileDuration) && fileDuration < MIN_UPLOAD_DURATION) {
       console.debug('duration-check', { duration: fileDuration, blocked: true });
-      showToast('Clip too short — minimum 2.5 seconds.', 'warning');
-      updateState(projectSection, hadTranscriptBeforeAttempt ? 'loaded' : 'empty');
+      showToast('Clip too short - minimum 2.5 seconds.', 'warning');
+      const hasTranscriptNow = Array.isArray(editableTranscript) && editableTranscript.length > 0;
+      updateState(projectSection, hasTranscriptNow ? 'loaded' : 'empty');
       return;
     }
 
     updateState(projectSection, 'loading');
     projectTab.click();
-    // Start fake progress here
-    startFakeProgress(uploadType === 'file' ? uploadData.size / (1024 * 1024) : null); 
+    startFakeProgress(uploadType === 'file' ? uploadData.size / (1024 * 1024) : null);
 
     const language = getSetting('language') || 'en';
     console.debug('submit-language', language);
-    const transcriptionResult = await uploadAndTranscribe(uploadType, uploadData, fileDuration, language);
-
-    finishProgress();
+    const uploadResponse = await uploadAndTranscribe(uploadType, uploadData, fileDuration, language);
 
     const elapsed = Date.now() - start;
     if (elapsed < MIN_DISPLAY_TIME) {
       await wait(MIN_DISPLAY_TIME - elapsed);
     }
 
-    // uploadAndTranscribe now has a stable return contract.
-    // We check `ok` before touching transcript fields to prevent undefined access crashes.
-    if (!transcriptionResult.ok || !transcriptionResult.transcript) {
-      const reasonMessageMap = {
-        no_speech_detected: 'No clear speech detected — try a different clip.',
-        low_confidence: 'Low confidence transcript — try again.'
-      };
-
-      uploadStatus.innerText = 'Needs retry';
-      uploadStatus.classList.add('failed');
-      updateState(projectSection, hadTranscriptBeforeAttempt ? 'loaded' : 'empty');
-
-      showToast(
-        reasonMessageMap[transcriptionResult.reason] || 'Transcription failed — please retry.',
-        'warning',
-        4500,
-        {
-          label: 'Retry',
-          callback: () => {
-            console.debug('retry-action');
-            runAttempt(uploadType, uploadData);
-          }
-        }
-      );
-
-      const transcriptTab = document.querySelector('.nav-link[data-id="transcription"]');
-      transcriptTab.click();
+    const jobPayload = uploadResponse?.transcript || uploadResponse || null;
+    if (!jobPayload?.jobId || jobPayload.status !== 'processing') {
+      finishProgress();
+      showRetryToast(uploadResponse?.reason, uploadType, uploadData);
       return;
     }
 
-    const result = transcriptionResult.transcript;
-    utterances = result.utterances;
-    window.transcriptResult = result; // Expose result for debugging
-    originalTranscript = result //Set original copy of API response
+    writeActiveJob({
+      jobId: jobPayload.jobId,
+      uploadType,
+      fileDuration,
+      startedAt: Date.now()
+    });
 
-    if (!Array.isArray(originalTranscript.utterances)) {
-      uploadStatus.innerText = 'Needs retry';
-      uploadStatus.classList.add('failed');
-      updateState(projectSection, hadTranscriptBeforeAttempt ? 'loaded' : 'empty');
-      showToast('Transcription could not be completed for this audio.', 'warning');
-      return;
-    }
-   
-    // new Set() automatically removes duplicates — so if you pass it ["A", "A", "B", "A", "B"] it gives you {A, B} and .size gives you 2.
-    const uniqueSpeakers = new Set(originalTranscript.utterances.map(u => u.speaker)).size;
-    
-    session = {
-      audio_duration: originalTranscript.audio_duration,
-      confidence: originalTranscript.confidence,
-      language_code: originalTranscript.language_code,
-      id: originalTranscript.id,
-      text: originalTranscript.text,
-      speakers: originalTranscript.speakers,
-      date: Date.now(),
-      speakercount: `${uniqueSpeakers} Speaker${uniqueSpeakers > 1 ? 's' : ''}`,
-
-      // These come from uploadData, not the API
-      title: uploadType === 'file' ? uploadData.name : uploadData,
-      audio_size: uploadType === 'file' ? `${(uploadData.size / (1024 * 1024)).toFixed(2)} MB` : '--',
-    }
-
-    /**The .map() HOF enables us to create our own version result we ca manipulate while keeping source of truth true
-    *Should produce something like this
-     *[{
-        speaker: "A",
-        start: 800,
-        end: 482820,
-        words: [...]
-        }]
-        */
-    editableTranscript = toEditableUtterances(originalTranscript.utterances);
-    session.utterances = editableTranscript;
-    
-    transcriptLanguage.innerText = `${session.language_code}`;
-    speakerCount.innerText = session.speakercount;
-    audioDuration.innerText = formatTime(session.audio_duration * 1000); // API gives seconds, convert to ms for formatting
-
-
-    console.log(`originalTranscript:`, originalTranscript);
-    console.log(`Session:`, session);
-    console.log(`editableTranscript:`, editableTranscript);
-    
-    renderTranscript(editableTranscript);
-    updateState(projectSection, 'loaded');
-    // Save the full session (including original transcript) to localStorage for persistence and future use in recordings section
-    try {
-      // Keep lightweight client metadata with canonical transcript for reliable restore reconciliation.
-      originalTranscript._client = {
-        title: session.title,
-        audio_size: session.audio_size,
-        date: session.date,
-        speakercount: session.speakercount
-      };
-      localStorage.setItem('originalTranscript', JSON.stringify(originalTranscript)); // write canonical transcript first
-      localStorage.setItem(TRANSCRIPT_KEY, JSON.stringify(buildSessionSnapshot(session, editableTranscript))); // then write compact UI snapshot
-      console.log('Transcription session saved to localStorage');
-    } catch (e) {
-      showToast('Failed to save transcript session', 'error');
-    }
-
-    // Show success toast for UI feedback
-    showToast('Transcription successful!', 'success')
-    
+    keepLockedForPolling = true;
+    await startPolling(jobPayload.jobId, { uploadType, uploadData, fileDuration });
   } catch (error) {
     console.error('Failed to transcribe:', error);
     uploadStatus.innerText = 'Failed';
     uploadStatus.classList.add('failed');
 
-    await wait(2000); 
-
-    // Show error toast for UI feedback
-    showToast(`Transcription failed - ${error}`, 'error')
+    await wait(2000);
+    showToast(`Transcription failed - ${error}`, 'error');
 
     const transcriptTab = document.querySelector('.nav-link[data-id="transcription"]');
     transcriptTab.click();
   } finally {
-    // UNLOCK UI here 
-    unlockUploadUI();
+    if (!keepLockedForPolling) {
+      unlockUploadUI();
+    }
   }
 }
 
@@ -1577,6 +1705,7 @@ urlButton.addEventListener("click", ()=> {
   toggleClass(dock, 'show-url-box')
   toggleClass(btn, 'url-toggle')
 })
+
 
 
 
