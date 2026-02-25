@@ -1,4 +1,3 @@
-
 // server.js
 import express from 'express';
 import cors from 'cors';
@@ -36,7 +35,7 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ 
+const upload = multer({
   storage: storage,
   limits: { fileSize: 500 * 1024 * 1024 } // 500MB
 });
@@ -46,104 +45,151 @@ const client = new AssemblyAI({
   apiKey: process.env.ASSEMBLYAI_API_KEY
 });
 
+// In-memory store for refresh-safe polling jobs.
+const jobs = new Map();
+
+function cleanupTempFile(filePath) {
+  if (filePath && fs.existsSync(filePath)) {
+    fs.unlink(filePath, (err) => {
+      if (err) console.error('File cleanup error:', err);
+      else console.log(`Deleted temp file: ${path.basename(filePath)}`);
+    });
+  }
+}
+
 // POST endpoint that accepts BOTH file uploads AND URLs
 app.post('/api/upload', upload.single('audio'), async (req, res) => {
   let filePath = null; // Track file path for cleanup
-  
+
   try {
-    let audioSource;
     const requestedLanguage = req.body?.language ?? null;
     console.debug('received-language', requestedLanguage);
-    
+
     // Check if file was uploaded
     if (req.file) {
       filePath = req.file.path; // Save for cleanup
       console.log(`Received file: ${req.file.originalname} (${(req.file.size / 1024 / 1024).toFixed(2)} MB)`);
-      
+
       // Validate file size server-side
       if (req.file.size > 500 * 1024 * 1024) {
+        cleanupTempFile(filePath);
         return res.status(400).json({ error: 'File too large. Maximum 500MB.' });
       }
-      
-      // Upload file to AssemblyAI using file stream (more memory efficient)
-      console.log('Uploading file to AssemblyAI...');
-      audioSource = await client.files.upload(fs.createReadStream(filePath));
-      console.log('Upload complete. URL:', audioSource);
-      
     } else if (req.body.audioUrl) {
-      // URL was provided
-      audioSource = req.body.audioUrl;
+      const audioSource = req.body.audioUrl;
       console.log(`Received URL: ${audioSource}`);
-      
+
       // Basic URL validation
       if (!audioSource.startsWith('http://') && !audioSource.startsWith('https://')) {
         return res.status(400).json({ error: 'Invalid URL format' });
       }
-      
     } else {
       return res.status(400).json({ error: 'No audio file or URL provided' });
     }
-    
-    // Request transcription (same for both file and URL)
-    console.log('Requesting transcription...');
-    const transcriptionOptions = {
-      audio: audioSource,
-      speaker_labels: true,     // enable speaker diarization
-      format_text: true,        // punctuation + capitalization / cleaned text
 
-      // other useful options you can toggle:
-      // auto_chapters: true,      // creates chapter objects with start/end + summary
-      // auto_highlights: true,    // generates highlight snippets
-      // punctuate: true,          // explicit punctuation option (if available)
-      // entity_detection: true,   // named entity info
-      // disfluencies: false       // remove filler words if true/false depending on API version
+    const jobId = typeof globalThis.crypto?.randomUUID === 'function'
+      ? globalThis.crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+    const job = {
+      id: jobId,
+      status: 'processing',
+      createdAt: Date.now(),
+      transcript: null,
+      error: null
     };
 
-    if (requestedLanguage === 'auto') {
-      transcriptionOptions.language_detection = true;
-    } else {
-      // Preserve existing default behavior for missing/unknown values.
-      transcriptionOptions.language_code = 'en';
-    }
+    jobs.set(jobId, job);
+    res.json({ jobId, status: 'processing' });
 
-    if (requestedLanguage === 'en') {
-      transcriptionOptions.language_code = 'en';
-      delete transcriptionOptions.language_detection;
-    }
+    void (async () => {
+      try {
+        let audioSource;
 
-    const transcript = await client.transcripts.transcribe(transcriptionOptions);
-    
-    // Check status
-    if (transcript.status === 'error') {
-      return res.status(500).json({ error: transcript.error });
-    }
-    
-    console.log('Transcription complete!');
-    
-    // Return result
-    // res.json({
-    //   text: transcript.text,
-    //   id: transcript.id,
-    //   status: transcript.status
-    // });
+        if (req.file) {
+          // Upload file to AssemblyAI using file stream (more memory efficient)
+          console.log('Uploading file to AssemblyAI...');
+          audioSource = await client.files.upload(fs.createReadStream(filePath));
+          console.log('Upload complete. URL:', audioSource);
+        } else {
+          // URL was validated above.
+          audioSource = req.body.audioUrl;
+        }
 
-    res.json(transcript)
-    
+        // Request transcription (same for both file and URL)
+        console.log('Requesting transcription...');
+        const transcriptionOptions = {
+          audio: audioSource,
+          speaker_labels: true,     // enable speaker diarization
+          format_text: true,        // punctuation + capitalization / cleaned text
+
+          // other useful options you can toggle:
+          // auto_chapters: true,      // creates chapter objects with start/end + summary
+          // auto_highlights: true,    // generates highlight snippets
+          // punctuate: true,          // explicit punctuation option (if available)
+          // entity_detection: true,   // named entity info
+          // disfluencies: false       // remove filler words if true/false depending on API version
+        };
+
+        if (requestedLanguage === 'auto') {
+          transcriptionOptions.language_detection = true;
+        } else {
+          // Preserve existing default behavior for missing/unknown values.
+          transcriptionOptions.language_code = 'en';
+        }
+
+        if (requestedLanguage === 'en') {
+          transcriptionOptions.language_code = 'en';
+          delete transcriptionOptions.language_detection;
+        }
+
+        const transcript = await client.transcripts.transcribe(transcriptionOptions);
+
+        if (transcript.status === 'error') {
+          throw new Error(transcript.error || 'Transcription failed');
+        }
+
+        console.log('Transcription complete!');
+        job.status = 'completed';
+        job.transcript = transcript;
+      } catch (error) {
+        console.error('Background transcription error:', error.message);
+        job.status = 'failed';
+        job.error = error.message;
+      } finally {
+        // Clean up temp file after AssemblyAI upload/transcription completes.
+        cleanupTempFile(filePath);
+      }
+    })();
   } catch (error) {
     console.error('Server error:', error.message);
-    res.status(500).json({ error: error.message });
-    
-  } finally {
-    // Clean up temp file after AssemblyAI upload (whether success or error)
-    if (filePath && fs.existsSync(filePath)) {
-      fs.unlink(filePath, (err) => {
-        if (err) console.error('File cleanup error:', err);
-        else console.log(`🗑️  Deleted temp file: ${path.basename(filePath)}`);
-      });
-    }
+    cleanupTempFile(filePath);
+    return res.status(500).json({ error: error.message });
   }
 });
 
+app.get('/api/jobs/:jobId', (req, res) => {
+  const job = jobs.get(req.params.jobId);
+
+  if (!job) {
+    return res.status(404).json({ error: 'Job not found' });
+  }
+
+  if (job.status === 'processing') {
+    return res.json({ status: 'processing' });
+  }
+
+  if (job.status === 'completed') {
+    return res.json({ status: 'completed', transcript: job.transcript });
+  }
+
+  if (job.status === 'failed') {
+    return res.json({ status: 'failed', error: job.error });
+  }
+
+  return res.status(500).json({ error: 'Invalid job state' });
+});
+
 app.listen(PORT, HOST, () => {
-  console.log(`✅ Server running on ${HOST}:${PORT}`);
+  console.log(`Server running on ${HOST}:${PORT}`);
 });
