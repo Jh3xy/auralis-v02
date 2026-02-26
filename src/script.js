@@ -29,7 +29,7 @@ console.log(`Auralis ${APP_VERSION}`)
 // Import JS files here
   
 import { toggleClass, createInitials, formatTime, formatDate, saveToLocalStorage, getRelativeTime} from './js/utils.js'
-import { uploadAndTranscribe } from "./js/transcribe.js";
+import { uploadAndTranscribe, validateTranscriptQuality } from "./js/transcribe.js";
 import { saveAudioBlob, getAudioBlob, clearAudioBlob } from './js/audioDB.js';
 import { downloadTXT } from './js/exporter.js';
 import { eventHub } from "./js/eventhub.js";
@@ -990,8 +990,14 @@ function showRetryToast(reason, uploadType, uploadData) {
   uploadStatus.innerText = 'Needs retry';
   uploadStatus.classList.add('failed');
   const hasTranscriptNow = Array.isArray(editableTranscript) && editableTranscript.length > 0;
+  const isQualityFailure = [
+    'insufficient_speech',
+    'low_confidence',
+    'low_speech_density',
+    'low_quality_transcript'
+  ].includes(reason);
   const projectSection = document.getElementById('projects');
-  updateState(projectSection, hasTranscriptNow ? 'loaded' : 'empty');
+  updateState(projectSection, hasTranscriptNow && !isQualityFailure ? 'loaded' : 'empty');
 
   showToast(
     getFailureMessage(reason),
@@ -1115,6 +1121,16 @@ async function startPolling(jobId, context = {}) {
       stopLoadingCopyRotation();
 
       if (payload.status === 'completed') {
+        const validation = validateTranscriptQuality(
+          payload.transcript,
+          contextSnapshot?.fileDuration ?? null
+        );
+        if (!validation.valid) {
+          showRetryToast(validation.reason, contextSnapshot?.uploadType, contextSnapshot?.uploadData);
+          unlockUploadUI();
+          return;
+        }
+
         const completed = applyTranscriptSuccess(
           payload.transcript,
           contextSnapshot?.uploadType,
@@ -1173,6 +1189,7 @@ async function runAttempt(uploadType, uploadData) {
     file.innerText = `${uploadType === 'file' ? uploadData.name : uploadData}...`;
 
     const fileDuration = await resolveUploadDuration(uploadType, uploadData);
+    console.log(fileDuration)
     if (uploadType === 'file' && Number.isFinite(fileDuration) && fileDuration < MIN_UPLOAD_DURATION) {
       console.debug('duration-check', { duration: fileDuration, blocked: true });
       showToast('Clip too short - minimum 2.5 seconds.', 'warning');

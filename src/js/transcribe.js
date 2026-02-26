@@ -36,6 +36,64 @@ function looksLikeGibberish(text) {
   return ratio > 0.20;
 }
 
+export function validateTranscriptQuality(transcript, fileDuration = null) {
+  const metrics = buildMetrics(transcript, fileDuration);
+  const transcriptText = typeof transcript?.text === 'string' ? transcript.text.trim() : '';
+  const wordsPerSecond = metrics.duration && metrics.duration > 0 ? metrics.wordCount / metrics.duration : 0;
+
+  // Thresholds tuned to reject likely music/noise hallucinations while accepting normal speech clips.
+  const minWordCount = 5; // Fewer than 5 words is often too little signal for reliable transcript quality.
+  const minAvgConfidence = 0.85; // Low average confidence usually means weak/unclear speech recognition.
+  const minWordsPerSecond = 0.5; // Very low speech density typically indicates silence/music/background audio.
+
+  console.log(
+    '[transcribe-metrics]',
+    'language_code:', transcript?.language_code,
+    'wordCount:', metrics.wordCount,
+    'avgConfidence:', metrics.avgConfidence,
+    'duration:', metrics.duration,
+    'wordsPerSecond:', wordsPerSecond
+  );
+
+  if (!transcriptText || metrics.wordCount < minWordCount) {
+    return {
+      valid: false,
+      reason: 'insufficient_speech',
+      metrics
+    };
+  }
+
+  if (metrics.avgConfidence !== null && metrics.avgConfidence < minAvgConfidence) {
+    return {
+      valid: false,
+      reason: 'low_confidence',
+      metrics
+    };
+  }
+
+  if (metrics.duration !== null && wordsPerSecond < minWordsPerSecond) {
+    return {
+      valid: false,
+      reason: 'low_speech_density',
+      metrics
+    };
+  }
+
+  if (looksLikeGibberish(transcriptText)) {
+    return {
+      valid: false,
+      reason: 'low_quality_transcript',
+      metrics
+    };
+  }
+
+  return {
+    valid: true,
+    reason: null,
+    metrics
+  };
+}
+
 export async function uploadAndTranscribe(type, data, fileDuration = null, language = null) {
   const emptyMetrics = {
     wordCount: 0,
@@ -100,58 +158,31 @@ export async function uploadAndTranscribe(type, data, fileDuration = null, langu
       throw new Error('Invalid JSON response from server');
     }
 
-    const metrics = buildMetrics(transcript, fileDuration);
-    const transcriptText = typeof transcript?.text === 'string' ? transcript.text.trim() : '';
-    const wordsPerSecond = metrics.duration && metrics.duration > 0 ? metrics.wordCount / metrics.duration : 0;
-
-    // Thresholds tuned to reject likely music/noise hallucinations while accepting normal speech clips.
-    const minWordCount = 5; // Fewer than 5 words is often too little signal for reliable transcript quality.
-    const minAvgConfidence = 0.85; // Low average confidence usually means weak/unclear speech recognition.
-    const minWordsPerSecond = 0.5; // Very low speech density typically indicates silence/music/background audio.
-
-    console.log(
-      '[transcribe-metrics]',
-      'language_code:', transcript.language_code,
-      'wordCount:', metrics.wordCount,
-      'avgConfidence:', metrics.avgConfidence,
-      'duration:', metrics.duration,
-      'wordsPerSecond:', wordsPerSecond
+    const isJobEnvelope = !!(
+      transcript &&
+      typeof transcript === 'object' &&
+      transcript.jobId &&
+      transcript.status === 'processing' &&
+      transcript.text == null &&
+      transcript.utterances == null &&
+      transcript.words == null
     );
-
-    // Contract rule: non-ideal transcript quality returns ok:false instead of undefined/throw.
-    if (!transcriptText || metrics.wordCount < minWordCount) {
+    if (isJobEnvelope) {
       return {
-        ok: false,
+        ok: true,
         transcript,
-        reason: 'insufficient_speech',
-        metrics
+        reason: null,
+        metrics: emptyMetrics
       };
     }
 
-    if (metrics.avgConfidence !== null && metrics.avgConfidence < minAvgConfidence) {
+    const validation = validateTranscriptQuality(transcript, fileDuration);
+    if (!validation.valid) {
       return {
         ok: false,
         transcript,
-        reason: 'low_confidence',
-        metrics
-      };
-    }
-
-    if (metrics.duration !== null && wordsPerSecond < minWordsPerSecond) {
-      return {
-        ok: false,
-        transcript,
-        reason: 'low_speech_density',
-        metrics
-      };
-    }
-
-    if (looksLikeGibberish(transcriptText)) {
-      return {
-        ok: false,
-        transcript,
-        reason: 'low_quality_transcript',
-        metrics
+        reason: validation.reason,
+        metrics: validation.metrics
       };
     }
 
@@ -159,7 +190,7 @@ export async function uploadAndTranscribe(type, data, fileDuration = null, langu
       ok: true,
       transcript,
       reason: null,
-      metrics
+      metrics: validation.metrics
     };
   } catch (error) {
     console.error('Transcription error:', error);

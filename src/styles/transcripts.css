@@ -264,8 +264,8 @@ input[type="range"]::-moz-range-thumb {
   opacity: 0.8;
 }
 .edit-controls [data-lucide] {
-  width: 18px;
-  height: 18px;
+  width: 15px;
+  height: 15px;
 }
 .edit-controls .btn:hover{
   color: var(--text-main);
