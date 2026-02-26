@@ -54,24 +54,38 @@ export function formatTranscriptText(editableTranscript) {
  * @param {Array} editableTranscript - The array of utterance objects from script.js
  * @param {string} audioName - Used as the filename for the downloaded file
  */
-export function downloadTXT(editableTranscript, audioName) {
+export function downloadFile(editableTranscript, audioName, dataId) {
 
-  // Build the formatted string from the transcript data
+  // Build the formatted text (used by txt and as PDF fallback)
   const text = formatTranscriptText(editableTranscript);
+  const baseName = stripExtension(audioName);
 
-  // Create the Blob
-  const blob = new Blob([text], {type: "text/plain"});
-  // create the temporary link
+  let blob;
+  let fileName;
+
+  if (dataId === "txt") {
+    blob = new Blob([text], { type: "text/plain" });
+    fileName = `${baseName}.txt`;
+
+  } else if (dataId === "pdf") {
+    // ⚠️ Real styled PDF needs a library like jsPDF
+    // For now this creates a plain .pdf that opens as text in some viewers
+    // TODO: swap this out with jsPDF when you're ready
+    blob = new Blob([text], { type: "application/pdf" });
+    fileName = `${baseName}.pdf`;
+
+  } else {
+    console.warn(`Unknown export format: ${dataId}`);
+    return; // bail out early if format is unrecognised
+  }
+
+  // Everything below is the same regardless of format 👇
   const src = URL.createObjectURL(blob);
-  // ceate the link to be cliked to download
-  const linktag = document.createElement('a');
-  linktag.href = src
-  linktag.download = `${stripExtension(audioName)}.txt`; // strips default file extension (.mp3) and adds .txt
-  // init download
-  linktag.click();
+  const linkTag = document.createElement('a');
+  linkTag.href = src;
+  linkTag.download = fileName;
+  linkTag.click();
 
-  // Revoke the blob URL after a short delay to free memory
-  // We wait 500ms to make sure the browser has started the download before we clean up
   setTimeout(() => URL.revokeObjectURL(src), 500);
 }
 

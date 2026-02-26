@@ -1,5 +1,4 @@
-
-
+﻿
 // !IMPORTANT: Notes:
 // - Include keyboard support for saving and posibbly editing (transcript editor is already setup for this with textarea, just need to add event listener for keydown and check if it's ctrl/cmd + s, then trigger save logic)
 
@@ -29,9 +28,9 @@ console.log(`Auralis ${APP_VERSION}`)
 // Import JS files here
   
 import { toggleClass, createInitials, formatTime, formatDate, saveToLocalStorage, getRelativeTime} from './js/utils.js'
-import { uploadAndTranscribe } from "./js/transcribe.js";
+import { uploadAndTranscribe, validateTranscriptQuality } from "./js/transcribe.js";
 import { saveAudioBlob, getAudioBlob, clearAudioBlob } from './js/audioDB.js';
-import { downloadTXT } from './js/exporter.js';
+import { downloadFile } from './js/exporter.js';
 import { eventHub } from "./js/eventhub.js";
 
 
@@ -990,8 +989,14 @@ function showRetryToast(reason, uploadType, uploadData) {
   uploadStatus.innerText = 'Needs retry';
   uploadStatus.classList.add('failed');
   const hasTranscriptNow = Array.isArray(editableTranscript) && editableTranscript.length > 0;
+  const isQualityFailure = [
+    'insufficient_speech',
+    'low_confidence',
+    'low_speech_density',
+    'low_quality_transcript'
+  ].includes(reason);
   const projectSection = document.getElementById('projects');
-  updateState(projectSection, hasTranscriptNow ? 'loaded' : 'empty');
+  updateState(projectSection, hasTranscriptNow && !isQualityFailure ? 'loaded' : 'empty');
 
   showToast(
     getFailureMessage(reason),
@@ -1115,6 +1120,16 @@ async function startPolling(jobId, context = {}) {
       stopLoadingCopyRotation();
 
       if (payload.status === 'completed') {
+        const validation = validateTranscriptQuality(
+          payload.transcript,
+          contextSnapshot?.fileDuration ?? null
+        );
+        if (!validation.valid) {
+          showRetryToast(validation.reason, contextSnapshot?.uploadType, contextSnapshot?.uploadData);
+          unlockUploadUI();
+          return;
+        }
+
         const completed = applyTranscriptSuccess(
           payload.transcript,
           contextSnapshot?.uploadType,
@@ -1173,6 +1188,7 @@ async function runAttempt(uploadType, uploadData) {
     file.innerText = `${uploadType === 'file' ? uploadData.name : uploadData}...`;
 
     const fileDuration = await resolveUploadDuration(uploadType, uploadData);
+    console.log(fileDuration)
     if (uploadType === 'file' && Number.isFinite(fileDuration) && fileDuration < MIN_UPLOAD_DURATION) {
       console.debug('duration-check', { duration: fileDuration, blocked: true });
       showToast('Clip too short - minimum 2.5 seconds.', 'warning');
@@ -1429,15 +1445,55 @@ playbackBtn.addEventListener('click', () => {
 });
 
 
-// !NOTE: export button should open a modal with all the export formats and attach export formats to the btns
+// Open modal logic
+// Todo: export button should open a modal with all the export formats and attach export formats to the btns
 const exportBtn = document.querySelector('.export-btn');
+const body = document.body;
 exportBtn.addEventListener('click', () => {
   if (!editableTranscript) {
     showToast('No transcript to export', 'info');
     return;
   }
-  downloadTXT(editableTranscript, session.title || 'transcript');
+  // Check transcript audio exists AND if it is currently playing
+  if (transcriptAudio && !transcriptAudio.paused) {
+    transcriptAudio.pause();
+  }
+  
+  // Open modal with export options
+  toggleClass(body, 'open-modal')
+
 });
+
+// New Dynamic Export Logic
+const exportBTN = document.getElementById('export')
+exportBTN.addEventListener('click', () => { 
+  if (!editableTranscript) {
+    showToast('No transcript to export', 'info');
+    return;
+  }
+  // grab dat-id of element with the class current
+  const downloadType = document.querySelector('.current.modal-label').dataset.id;
+  if (!downloadType) {
+    showToast('No export type selected', 'error');
+    return;
+  }
+
+  downloadFile(editableTranscript, session.title || 'transcript', downloadType);
+});
+
+// Cancel Modal logic 
+const cancelIcon = document.querySelectorAll('.cancel-btn')
+cancelIcon.forEach(icon => {
+  icon.addEventListener('click', ()=> {
+    toggleClass(body, 'open-modal');
+  })
+})
+
+// Export Label active class logic
+const modalLabels = document.querySelectorAll('.modal-label');
+toggleClass(modalLabels, 'current')
+
+
 
 // Store the handler in a variable so we can re-attach it without arguments.callee
 function attachTitleEdit(element) {
@@ -1569,8 +1625,8 @@ if (savedState && !savedState.isCompleted) {
 }
 
 const stepTwoBtn = document.getElementById('step-two-btn')
+const usernameInput = document.getElementById('user-name-input')
 stepTwoBtn.addEventListener("click", ()=> {
-  const usernameInput = document.getElementById('user-name-input')
   const username = usernameInput.value.trim()
   const errMsg = document.querySelector('.err-msg')
   if (username === '') {
@@ -1582,6 +1638,12 @@ stepTwoBtn.addEventListener("click", ()=> {
     goToStep(3)
     // Create Initials
     createInitials(username)
+  }
+})
+
+usernameInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    stepTwoBtn.click();
   }
 })
 
@@ -1606,6 +1668,14 @@ dashboardBtn.addEventListener("click", ()=>{
       document.documentElement.classList.remove('transitioning');
     }, 500);
   }, 400); // Small delay for smoothness
+})
+
+const onboardingUploadAudioBtn = document.getElementById('onboarding-upload-audio-btn')
+onboardingUploadAudioBtn.addEventListener('click', () => {
+  dashboardBtn.click();
+  setTimeout(() => {
+    label.click();
+  }, 450);
 })
 
 
