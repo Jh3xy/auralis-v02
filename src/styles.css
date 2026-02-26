@@ -32,11 +32,13 @@ body {
   z-index: 1000;
 }
 
-body.open-nav .overlay{
+body.open-nav .overlay,
+body.open-modal .overlay{
   opacity: 1;
   pointer-events: all;
 }
-body.open-nav{
+body.open-nav,
+body.open-modal{
   overflow: hidden;
 }
 /* body.open-nav header *,
@@ -46,7 +48,8 @@ body.open-nav main *{
   user-select: none;
   touch-action: none;
 } */
- body.open-nav .overlay{
+ body.open-nav .overlay,
+ body.open-modal .overlay{
   display: block;
  }
 .app-grid{
@@ -822,6 +825,202 @@ header .menu-btn{
 }
 
 
+body.open-modal .sidebar{
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: .5;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* Base Modal Styles (Centering) */
+.modal {
+  width: 80%;
+  max-width: 500px;
+  max-height: 580px;
+  padding: 1.5rem;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: var(--z-modal);
+  color: var(--text-main);
+  background-color: var(--text-inverse);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.5rem;
+  
+  /* Start hidden */
+  display: none; 
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* Show the modal when the body has the 'open-modal' class */
+body.open-modal .modal {
+  display: block;
+  opacity: 1;
+}
+
+/* Ensure the overlay also shows up */
+body.open-modal .overlay {
+  opacity: 1;
+  pointer-events: all;
+  display: block;
+}
+.modal-header {
+  margin-bottom: 1.5rem;
+}
+.modal-header h2{
+  font-size: 1.25rem;
+  line-height: 1.5rem;
+  font-weight: var(--fw-semibold);
+  letter-spacing: -0.025em;
+}
+.modal-header button{
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.modal-header button [data-lucide] {
+  width: 20px;
+  height: 20px;
+}
+.modal-header button:hover{
+  color: var(--text-main);
+}
+label{
+  transition: var(--transition-base);
+  border-radius: 0.5rem;
+  border-width: 1px;
+  padding: 1rem;
+  border: 1px solid transparent;
+}
+label:hover {
+  border: 1px solid var(--border-subtle);
+}
+label:hover .label-tag [data-lucide] {
+  color: var(--text-main);
+}
+label.new,
+label.disabled {
+  position: relative;
+}
+label.disabled{
+  opacity: 0.5;
+  pointer-events: none;
+}
+label.new::before,
+label.disabled::before{
+  position: absolute;
+  top: -8px;
+  left: 5px;
+  padding: 1px 3px;
+  border-radius: 4px;
+  /* font-family: var(--ff-secondary); */
+  font-size: var(--fs-xs);
+  z-index: var(--z-tooltip);
+}
+label.new::before {
+  content: 'New';
+  color: var(--text-inverse);
+  background-color: var(--color-accent-1);
+}
+/* 👇 "Soon" tag for disabled labels */
+label.disabled::before {
+  content: 'Soon';
+  color: var(--text-inverse);
+  background-color: #555; /* a muted color to signal "not ready" */
+}
+.export-formats p.sub-text{
+  margin-bottom: 1rem;
+  max-width: 140px;
+}
+.label-tag{
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.25rem;
+}
+.label-tag [data-lucide] {
+  width: 24px;
+  height: 24px;
+  color: var(--text-muted);
+}
+.label-title p:not(.sub-text) {
+  font-size: 0.975rem;
+  line-height: 1.25rem;
+  font-weight: var(--fw-medium);
+}
+.label-title .sub-text{
+  font-size: 10px;
+  text-transform: none;
+}
+
+
+/* Active label classes */
+label.current{
+  border: 1px solid var(--border-subtle);
+}
+label.current .label-tag{
+  background-color: rgb(from rgb(255,255, 255) r g b / 0.1);
+}
 
 
 
+/* Styled Input */
+
+/* Hide the real radio input but keep it accessible */
+.export-formats input[type="radio"] {
+  display: none;
+}
+
+/* The custom circle */
+.custom-radio {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--border-subtle);
+  background-color: transparent;
+  flex-shrink: 0;
+  transition: border-color 0.2s, background-color 0.2s;
+  position: relative;
+}
+
+/* When the radio IS checked, style the span next to it */
+.export-formats input[type="radio"]:checked + .custom-radio {
+  background-color: var(--color-highlight); /* purple fill - match your brand color */
+  border-color: var(--color-highlight);
+}
+
+/* The inner dot for the checked state */
+.export-formats input[type="radio"]:checked + .custom-radio::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--text-main); 
+}
+
+.download-btns{
+  margin-top: .7rem;
+}
+.download-btns button{
+  width: 100%;
+  padding: 0.75rem 0;
+  border-radius: 0.5rem;
+  font-weight: var(--fw-bold);
+  margin-bottom: .4rem;
+}
+.export-btn-main{
+  background-color: var(--color-highlight);
+  color: var(--text-inverse);
+}
+.export-btn-alt{
+  color: var(--text-muted);
+}
+
+.export-btn-alt:hover{
+  color: var(--text-main);
+}

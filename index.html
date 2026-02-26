@@ -270,6 +270,66 @@
   <div id="main-app">
     <div class="app-grid grid">
       <div class="overlay"></div>
+      <div id="export-modal" class="modal">
+        <div class="modal-header flex items-center justify-between">
+          <h2>Export File</h2>
+          <button class="cancel-icon cancel-btn">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="export-formats flex flex-col gap-4">
+          <p class="sub-text">Select Format</p>
+
+          <label for="pdf" class="flex items-center justify-between current modal-label new" data-id="pdf">
+            <div class="label-desc flex items-center gap-4">
+              <div class="label-tag flex-center">
+                <i data-lucide="files"></i>
+              </div>
+              <div class="label-title">
+                <p>Export to PDF</p>
+                <p class="sub-text">Download as a stylized document</p>
+              </div>
+            </div>
+            <input type="radio" id="pdf" name="export-format" value="pdf" /> 
+            <span class="custom-radio"></span>
+          </label>
+          <label for="txt" class="flex items-center justify-between modal-label" data-id="txt">
+            <div class="label-desc flex items-center gap-4">
+              <div class="label-tag flex-center">
+                <i data-lucide="file-type-corner"></i>
+              </div>
+              <div class="label-title">
+                <p>Export as TXT</p>
+                <p class="sub-text">Download as a text file from your browser</p>
+              </div>
+            </div>
+            <input type="radio" id="txt" name="export-format" value="txt" /> 
+            <span class="custom-radio"></span> 
+          </label>
+          <label for="gmail" class="flex items-center justify-between modal-label disabled" data-id="gmail">
+            <div class="label-desc flex items-center gap-4">
+              <div class="label-tag flex-center">
+                <i data-lucide="mail"></i>
+              </div>
+              <div class="label-title">
+                <p>Send to Gmail</p>
+                <p class="sub-text">Directly email to an account</p>
+              </div>
+            </div>
+            <input type="radio" id="gmail" name="export-format" value="gmail" /> 
+            <span class="custom-radio"></span>  
+          </label>
+        </div>
+        <div class="download-btns">
+          <button id="export" class="flex items-center justify-center gap-1 export-btn-main">
+            <i data-lucide="download"></i>
+            Download
+          </button>
+          <button class="export-btn-alt cancel-btn">
+            Cancel
+          </button>
+        </div>
+      </div>
       <header class="full-width">
         <div class="wrap flex-between">
           <div class="app-logo flex items-center gap-1">

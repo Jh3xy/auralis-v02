@@ -1,4 +1,4 @@
-
+﻿
 // !IMPORTANT: Notes:
 // - Include keyboard support for saving and posibbly editing (transcript editor is already setup for this with textarea, just need to add event listener for keydown and check if it's ctrl/cmd + s, then trigger save logic)
 
@@ -30,7 +30,7 @@ console.log(`Auralis ${APP_VERSION}`)
 import { toggleClass, createInitials, formatTime, formatDate, saveToLocalStorage, getRelativeTime} from './js/utils.js'
 import { uploadAndTranscribe, validateTranscriptQuality } from "./js/transcribe.js";
 import { saveAudioBlob, getAudioBlob, clearAudioBlob } from './js/audioDB.js';
-import { downloadTXT } from './js/exporter.js';
+import { downloadFile } from './js/exporter.js';
 import { eventHub } from "./js/eventhub.js";
 
 
@@ -1445,15 +1445,55 @@ playbackBtn.addEventListener('click', () => {
 });
 
 
-// !NOTE: export button should open a modal with all the export formats and attach export formats to the btns
+// Open modal logic
+// Todo: export button should open a modal with all the export formats and attach export formats to the btns
 const exportBtn = document.querySelector('.export-btn');
+const body = document.body;
 exportBtn.addEventListener('click', () => {
   if (!editableTranscript) {
     showToast('No transcript to export', 'info');
     return;
   }
-  downloadTXT(editableTranscript, session.title || 'transcript');
+  // Check transcript audio exists AND if it is currently playing
+  if (transcriptAudio && !transcriptAudio.paused) {
+    transcriptAudio.pause();
+  }
+  
+  // Open modal with export options
+  toggleClass(body, 'open-modal')
+
 });
+
+// New Dynamic Export Logic
+const exportBTN = document.getElementById('export')
+exportBTN.addEventListener('click', () => { 
+  if (!editableTranscript) {
+    showToast('No transcript to export', 'info');
+    return;
+  }
+  // grab dat-id of element with the class current
+  const downloadType = document.querySelector('.current.modal-label').dataset.id;
+  if (!downloadType) {
+    showToast('No export type selected', 'error');
+    return;
+  }
+
+  downloadFile(editableTranscript, session.title || 'transcript', downloadType);
+});
+
+// Cancel Modal logic 
+const cancelIcon = document.querySelectorAll('.cancel-btn')
+cancelIcon.forEach(icon => {
+  icon.addEventListener('click', ()=> {
+    toggleClass(body, 'open-modal');
+  })
+})
+
+// Export Label active class logic
+const modalLabels = document.querySelectorAll('.modal-label');
+toggleClass(modalLabels, 'current')
+
+
 
 // Store the handler in a variable so we can re-attach it without arguments.callee
 function attachTitleEdit(element) {
