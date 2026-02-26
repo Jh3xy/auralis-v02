@@ -17,6 +17,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:ital,wght@0,300..800;1,300..800&family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" rel="stylesheet">
   <title> Auralis — Premium Transcription Interface.</title>
+  <!-- File export Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script>
     // User Onboarding Persistence - initialize localStorage properly
     const storageKey = 'auralis-onboarding';
@@ -290,10 +292,23 @@
                 <p class="sub-text">Download as a stylized document</p>
               </div>
             </div>
-            <input type="radio" id="pdf" name="export-format" value="pdf" /> 
+            <input type="radio" id="pdf" name="export-format" value="pdf" checked/> 
             <span class="custom-radio"></span>
           </label>
-          <label for="txt" class="flex items-center justify-between modal-label" data-id="txt">
+          <label for="docx" class="flex items-center justify-between modal-label new" data-id="docx">
+            <div class="label-desc flex items-center gap-4">
+              <div class="label-tag flex-center">
+                <i data-lucide="file-text"></i>
+              </div>
+              <div class="label-title">
+                <p>Export as DOCX</p>
+                <p class="sub-text">Download as a doc file from your browser</p>
+              </div>
+            </div>
+            <input type="radio" id="docx" name="export-format" value="docx" /> 
+            <span class="custom-radio"></span> 
+          </label>
+          <!-- <label for="txt" class="flex items-center justify-between modal-label" data-id="txt">
             <div class="label-desc flex items-center gap-4">
               <div class="label-tag flex-center">
                 <i data-lucide="file-type-corner"></i>
@@ -305,7 +320,7 @@
             </div>
             <input type="radio" id="txt" name="export-format" value="txt" /> 
             <span class="custom-radio"></span> 
-          </label>
+          </label> -->
           <label for="gmail" class="flex items-center justify-between modal-label disabled" data-id="gmail">
             <div class="label-desc flex items-center gap-4">
               <div class="label-tag flex-center">
