@@ -1466,19 +1466,19 @@ exportBtn.addEventListener('click', () => {
 
 // New Dynamic Export Logic
 const exportBTN = document.getElementById('export')
-exportBTN.addEventListener('click', () => { 
+exportBTN.addEventListener('click', async () => {
   if (!editableTranscript) {
     showToast('No transcript to export', 'info');
     return;
   }
-  // grab dat-id of element with the class current
-  const downloadType = document.querySelector('.current.modal-label').dataset.id;
+
+  const downloadType = document.querySelector('.current.modal-label')?.dataset.id;
   if (!downloadType) {
     showToast('No export type selected', 'error');
     return;
   }
 
-  downloadFile(editableTranscript, session.title || 'transcript', downloadType);
+  await downloadFile(editableTranscript, session.title || 'transcript', downloadType);
 });
 
 // Cancel Modal logic 

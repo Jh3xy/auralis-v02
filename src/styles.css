@@ -930,10 +930,6 @@ label.disabled::before {
   color: var(--text-inverse);
   background-color: #555; /* a muted color to signal "not ready" */
 }
-.export-formats p.sub-text{
-  margin-bottom: 1rem;
-  max-width: 140px;
-}
 .label-tag{
   width: 2.5rem;
   height: 2.5rem;
