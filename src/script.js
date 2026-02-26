@@ -1,5 +1,4 @@
 
-
 // !IMPORTANT: Notes:
 // - Include keyboard support for saving and posibbly editing (transcript editor is already setup for this with textarea, just need to add event listener for keydown and check if it's ctrl/cmd + s, then trigger save logic)
 
@@ -1586,8 +1585,8 @@ if (savedState && !savedState.isCompleted) {
 }
 
 const stepTwoBtn = document.getElementById('step-two-btn')
+const usernameInput = document.getElementById('user-name-input')
 stepTwoBtn.addEventListener("click", ()=> {
-  const usernameInput = document.getElementById('user-name-input')
   const username = usernameInput.value.trim()
   const errMsg = document.querySelector('.err-msg')
   if (username === '') {
@@ -1599,6 +1598,12 @@ stepTwoBtn.addEventListener("click", ()=> {
     goToStep(3)
     // Create Initials
     createInitials(username)
+  }
+})
+
+usernameInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    stepTwoBtn.click();
   }
 })
 
@@ -1623,6 +1628,14 @@ dashboardBtn.addEventListener("click", ()=>{
       document.documentElement.classList.remove('transitioning');
     }, 500);
   }, 400); // Small delay for smoothness
+})
+
+const onboardingUploadAudioBtn = document.getElementById('onboarding-upload-audio-btn')
+onboardingUploadAudioBtn.addEventListener('click', () => {
+  dashboardBtn.click();
+  setTimeout(() => {
+    label.click();
+  }, 450);
 })
 
 
