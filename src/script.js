@@ -1,7 +1,4 @@
 ﻿
-// !IMPORTANT: Notes:
-// - Include keyboard support for saving and posibbly editing (transcript editor is already setup for this with textarea, just need to add event listener for keydown and check if it's ctrl/cmd + s, then trigger save logic)
-
 
 // Import Stylesheets
 import './styles/variables.css'
@@ -11,6 +8,14 @@ import './styles/utils.css'
 import './styles/onboarding.css'
 import './styles/transcripts.css'
 import './styles/queries.css'
+
+
+// Import JS files here
+import { toggleClass, createInitials, formatTime, formatDate, saveToLocalStorage, getRelativeTime} from './js/utils.js'
+import { uploadAndTranscribe, validateTranscriptQuality } from "./js/transcribe.js";
+import { saveAudioBlob, getAudioBlob, clearAudioBlob } from './js/audioDB.js';
+import { downloadFile } from './js/exporter.js';
+import { eventHub } from "./js/eventhub.js";
 
 
 const TRANSCRIPT_KEY = 'auralis-transcript'
@@ -24,14 +29,6 @@ const plan = document.querySelector('.plan');
 plan.innerText = `Beta - ${APP_VERSION}`
 console.log('Vite is Running Script!');
 console.log(`Auralis ${APP_VERSION}`)
-
-// Import JS files here
-  
-import { toggleClass, createInitials, formatTime, formatDate, saveToLocalStorage, getRelativeTime} from './js/utils.js'
-import { uploadAndTranscribe, validateTranscriptQuality } from "./js/transcribe.js";
-import { saveAudioBlob, getAudioBlob, clearAudioBlob } from './js/audioDB.js';
-import { downloadFile } from './js/exporter.js';
-import { eventHub } from "./js/eventhub.js";
 
 
 let utterances;
@@ -1181,11 +1178,11 @@ async function runAttempt(uploadType, uploadData) {
 
     // UI Prep
     transcriptTitle.innerText = `${uploadType === 'file' ? uploadData.name : uploadData}`;
-    audioName.innerText = `${uploadType === 'file' ? uploadData.name : uploadData}...`;
+    audioName.innerText = `${uploadType === 'file' ? uploadData.name : uploadData}`;
     transcriptDate.innerText = formatDate(Date.now(), true);
     uploadStatus.innerText = 'Active';
     uploadStatus.classList.remove('failed');
-    file.innerText = `${uploadType === 'file' ? uploadData.name : uploadData}...`;
+    file.innerText = `${uploadType === 'file' ? uploadData.name : uploadData}`;
 
     const fileDuration = await resolveUploadDuration(uploadType, uploadData);
     console.log(fileDuration)
@@ -1320,7 +1317,7 @@ transcriptAudio.addEventListener("timeupdate", () => {
       const windowHeight = window.innerHeight;
 
       // Check if the word has gone below 85% of the screen height
-      // We use 75% (not 100%) so the scroll happens before the word fully disappears
+      // We use 85% (not 100%) so the scroll happens before the word fully disappears
       // giving the user a comfortable head start before the next scroll
       const isBelow = rect.bottom > windowHeight * 0.85;
 
@@ -1446,7 +1443,6 @@ playbackBtn.addEventListener('click', () => {
 
 
 // Open modal logic
-// Todo: export button should open a modal with all the export formats and attach export formats to the btns
 const exportBtn = document.querySelector('.export-btn');
 const body = document.body;
 exportBtn.addEventListener('click', () => {
@@ -1513,7 +1509,6 @@ function handleTitleDblClick() {
   input.select();
 
   // Guard flag - prevents saveTitle from running twice
-  // (blur fires after keydown replaces the element, causing the second crash)
   let saved = false;
 
   function saveTitle() {
@@ -1831,27 +1826,4 @@ urlButton.addEventListener("click", ()=> {
   toggleClass(dock, 'show-url-box')
   toggleClass(btn, 'url-toggle')
 })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

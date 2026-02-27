@@ -7,6 +7,7 @@
  */
 
 import { Document, Packer, Paragraph, TextRun } from "docx";
+import { jsPDF } from "jspdf";
 
 /**
  * Strips the file extension from a filename.
@@ -88,13 +89,31 @@ function exportAsTXT(text, baseName) {
  * @param {string} baseName - filename without extension
  */
 function exportAsPDF(text, baseName) {
-  const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
-  // splitTextToSize prevents text running off the page edge — 180 is usable width in mm
-  const lines = doc.splitTextToSize(text, 180);
-  doc.text(lines, 15, 20); // (content, x margin, y margin)
-  doc.save(`${baseName}.pdf`); // jsPDF handles its own download — no Blob needed
+  // PDF formatting settings
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 15;
+  const usableWidth = pageWidth - margin * 2;
+  const startY = 20;
+  const lineHeight = 10;
+
+  // Split text into lines that fit within the usable width
+  const lines = doc.splitTextToSize(text, usableWidth);
+
+  let y = startY;
+  for (let i = 0; i < lines.length; i++) {
+    // If y would overflow the page, add a new page and reset Y position
+    if (y > pageHeight - margin) {
+      doc.addPage();
+      y = startY;
+    }
+    doc.text(lines[i], margin, y);
+    y += lineHeight;
+  }
+
+  doc.save(`${baseName}.pdf`);
 }
 
 
@@ -106,7 +125,6 @@ function exportAsPDF(text, baseName) {
  * @param {string} baseName - filename without extension
  */
 async function exportAsDOCX(editableTranscript, baseName) {
-  // const { Document, Packer, Paragraph, TextRun } = docx;
 
   const paragraphs = editableTranscript.flatMap(utterance => [
     new Paragraph({
