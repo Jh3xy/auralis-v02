@@ -327,7 +327,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       uploadType: activeJob.uploadType || null,
       uploadData: null,
       fileDuration: activeJob.fileDuration ?? null,
-      startedAt: activeJob.startedAt ?? Date.now()
+      startedAt: activeJob.startedAt ?? Date.now(),
+      fileName: activeJob.fileName || null,
+      fileSizeText: activeJob.fileSizeText || '--'
     });
     return;
   }
@@ -1023,7 +1025,7 @@ function showRetryToast(reason, uploadType, uploadData) {
   transcriptTab?.click();
 }
 
-function applyTranscriptSuccess(result, uploadType, uploadData) {
+function applyTranscriptSuccess(result, uploadType, uploadData, contextSnapshot = null) {
   utterances = result.utterances;
   window.transcriptResult = result; // Expose result for debugging
   originalTranscript = result; // Set original copy of API response
@@ -1044,11 +1046,11 @@ function applyTranscriptSuccess(result, uploadType, uploadData) {
   const audioName = document.querySelector('.audio-name');
 
   const resolvedTitle = uploadType === 'file'
-    ? (uploadData?.name || 'Uploaded Audio')
+    ? (uploadData?.name || contextSnapshot?.fileName || 'Uploaded Audio')
     : (typeof uploadData === 'string' && uploadData ? uploadData : 'Audio URL');
   const resolvedSize = uploadType === 'file' && uploadData?.size
     ? `${(uploadData.size / (1024 * 1024)).toFixed(2)} MB`
-    : '--';
+    : (contextSnapshot?.fileSizeText || '--');
 
   const uniqueSpeakers = new Set(originalTranscript.utterances.map(u => u.speaker)).size;
 
@@ -1110,7 +1112,7 @@ async function startPolling(jobId, context = {}) {
     try {
       const response = await fetch(`${API_BASE}/api/jobs/${encodeURIComponent(jobId)}`);
       if (!response.ok) {
-        if (response.status === 404) {
+        if (response.status === 404 || response.status >= 500) {
           const activeJob = readActiveJob();
           const startedAt = Number(activeJob?.startedAt);
           const uploadWindowMs = 15 * 60 * 1000;
@@ -1144,7 +1146,8 @@ async function startPolling(jobId, context = {}) {
         const completed = applyTranscriptSuccess(
           payload.transcript,
           contextSnapshot?.uploadType,
-          contextSnapshot?.uploadData
+          contextSnapshot?.uploadData,
+          contextSnapshot
         );
         if (!completed) {
           showRetryToast('default', contextSnapshot?.uploadType, contextSnapshot?.uploadData);
@@ -1159,6 +1162,13 @@ async function startPolling(jobId, context = {}) {
     } catch (error) {
       console.error('Polling error:', error);
       const contextSnapshot = pollingContext;
+      const activeJob = readActiveJob();
+      const startedAt = Number(activeJob?.startedAt);
+      const uploadWindowMs = 15 * 60 * 1000;
+      if (Number.isFinite(startedAt) && (Date.now() - startedAt) <= uploadWindowMs) {
+        console.warn('Polling transient error within upload window; retaining active job state.');
+        return;
+      }
       stopPolling();
       clearActiveJob();
       stopElapsedTimer();

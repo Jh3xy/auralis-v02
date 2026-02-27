@@ -1010,6 +1010,9 @@ label.current .label-tag{
   font-weight: var(--fw-bold);
   margin-bottom: .4rem;
 }
+.download-btns button:active{
+  transform: scale(0.95);
+}
 .export-btn-main{
   background-color: var(--color-highlight);
   color: var(--text-inverse);
