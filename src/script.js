@@ -961,6 +961,12 @@ function clearActiveJob() {
   localStorage.removeItem(ACTIVE_JOB_KEY);
 }
 
+function generateClientJobId() {
+  return typeof globalThis.crypto?.randomUUID === 'function'
+    ? globalThis.crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 function stopPolling() {
   if (pollingIntervalId) {
     clearInterval(pollingIntervalId);
@@ -1104,6 +1110,14 @@ async function startPolling(jobId, context = {}) {
     try {
       const response = await fetch(`${API_BASE}/api/jobs/${encodeURIComponent(jobId)}`);
       if (!response.ok) {
+        if (response.status === 404) {
+          const activeJob = readActiveJob();
+          const startedAt = Number(activeJob?.startedAt);
+          const uploadWindowMs = 15 * 60 * 1000;
+          if (Number.isFinite(startedAt) && (Date.now() - startedAt) <= uploadWindowMs) {
+            return;
+          }
+        }
         throw new Error(`Polling failed with status ${response.status}`);
       }
 
@@ -1196,12 +1210,30 @@ async function runAttempt(uploadType, uploadData) {
 
     updateState(projectSection, 'loading');
     projectTab.click();
-    startElapsedTimer(Date.now());
+    const startedAt = Date.now();
+    startElapsedTimer(startedAt);
     startLoadingCopyRotation();
+
+    const clientJobId = generateClientJobId();
+    const fileSizeText = uploadType === 'file' && uploadData?.size
+      ? `${(uploadData.size / (1024 * 1024)).toFixed(2)} MB`
+      : '--';
+
+    writeActiveJob({
+      jobId: clientJobId,
+      uploadType,
+      fileDuration,
+      startedAt,
+      fileName: uploadType === 'file' ? (uploadData?.name || 'Uploaded Audio') : uploadData,
+      fileSizeText
+    });
+
+    keepLockedForPolling = true;
+    await startPolling(clientJobId, { uploadType, uploadData, fileDuration, startedAt });
 
     const language = getSetting('language') || 'en';
     console.debug('submit-language', language);
-    const uploadResponse = await uploadAndTranscribe(uploadType, uploadData, fileDuration, language);
+    const uploadResponse = await uploadAndTranscribe(uploadType, uploadData, fileDuration, language, clientJobId);
 
     const elapsed = Date.now() - start;
     if (elapsed < MIN_DISPLAY_TIME) {
@@ -1210,29 +1242,18 @@ async function runAttempt(uploadType, uploadData) {
 
     const jobPayload = uploadResponse?.transcript || uploadResponse || null;
     if (!jobPayload?.jobId || jobPayload.status !== 'processing') {
+      stopPolling();
+      clearActiveJob();
       stopElapsedTimer();
       stopLoadingCopyRotation();
       showRetryToast(uploadResponse?.reason, uploadType, uploadData);
+      keepLockedForPolling = false;
       return;
     }
-
-    const fileSizeText = uploadType === 'file' && uploadData?.size
-      ? `${(uploadData.size / (1024 * 1024)).toFixed(2)} MB`
-      : '--';
-
-    writeActiveJob({
-      jobId: jobPayload.jobId,
-      uploadType,
-      fileDuration,
-      startedAt: elapsedStartedAt ?? Date.now(),
-      fileName: uploadType === 'file' ? (uploadData?.name || 'Uploaded Audio') : uploadData,
-      fileSizeText
-    });
-
-    keepLockedForPolling = true;
-    await startPolling(jobPayload.jobId, { uploadType, uploadData, fileDuration });
   } catch (error) {
     console.error('Failed to transcribe:', error);
+    stopPolling();
+    clearActiveJob();
     stopElapsedTimer();
     stopLoadingCopyRotation();
     uploadStatus.innerText = 'Failed';
@@ -1240,6 +1261,7 @@ async function runAttempt(uploadType, uploadData) {
 
     await wait(2000);
     showToast(`Transcription failed - ${error}`, 'error');
+    keepLockedForPolling = false;
 
     const transcriptTab = document.querySelector('.nav-link[data-id="transcription"]');
     transcriptTab.click();

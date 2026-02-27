@@ -394,6 +394,7 @@ header .menu-btn{
 }
 .search-box label{
   opacity: 0.8;
+  padding: 0 !important;
 }
 .search-box:has(input[id="search"]:focus){
   border: 2px solid var(--color-slate-dark);

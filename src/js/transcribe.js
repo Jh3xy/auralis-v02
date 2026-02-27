@@ -94,7 +94,7 @@ export function validateTranscriptQuality(transcript, fileDuration = null) {
   };
 }
 
-export async function uploadAndTranscribe(type, data, fileDuration = null, language = null) {
+export async function uploadAndTranscribe(type, data, fileDuration = null, language = null, jobId = null) {
   const emptyMetrics = {
     wordCount: 0,
     avgConfidence: null,
@@ -111,10 +111,13 @@ export async function uploadAndTranscribe(type, data, fileDuration = null, langu
       if (language !== null && language !== undefined) {
         formData.append('language', language);
       }
+      if (jobId) {
+        formData.append('jobId', jobId);
+      }
       body = formData;
       console.log(`Uploading file: ${data.name} , ${data.type} (${data.type})...`);
     } else if (type === 'url') {
-      body = JSON.stringify({ audioUrl: data, language });
+      body = JSON.stringify({ audioUrl: data, language, jobId });
       headers['Content-Type'] = 'application/json';
       console.log(`Sending URL: ${data}...`);
     } else {

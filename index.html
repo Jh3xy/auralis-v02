@@ -520,7 +520,13 @@
               </div>
             </div>
 
-            <span class="info-desc flex items-start gap-2"> <i data-lucide="info"></i> Larger files might take more time to process.</span>
+            <span class="info-desc flex flex-col items-start gap-2">
+              <i data-lucide="info"></i>
+              <div class="flex flex-col items-start">
+                <span> Larger files might take more time to process.</span>
+                <span>Faster network guarantee transcribe speed.</span>
+              </div>
+            </span>
           </div>
           <div class="transcript-state">
             <!-- TODO: adding custom Audio player here -->
@@ -575,7 +581,7 @@
         <section id="recordings" class="section recordings">
           <div class="wrap">
             <div class="search-bar flex-between">
-              <div class="search-box flex items-start">
+              <div class="search-box flex items-center">
                 <label for="search">
                   <i data-lucide="search"></i>
                 </label>

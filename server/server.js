@@ -87,9 +87,11 @@ app.post('/api/upload', upload.single('audio'), async (req, res) => {
       return res.status(400).json({ error: 'No audio file or URL provided' });
     }
 
-    const jobId = typeof globalThis.crypto?.randomUUID === 'function'
+    const requestedJobId = typeof req.body?.jobId === 'string' ? req.body.jobId.trim() : '';
+    const fallbackJobId = typeof globalThis.crypto?.randomUUID === 'function'
       ? globalThis.crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const jobId = requestedJobId || fallbackJobId;
 
     const job = {
       id: jobId,
