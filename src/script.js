@@ -783,6 +783,7 @@ function handleEdit(index) {
 
 // Function to handle save logic
 function handleSave(index) {
+  document.removeEventListener('keydown', handleKeyDown);
   const currentSpeakerBlock = document.querySelector(`[data-index="${index}"]`);
   const textarea = currentSpeakerBlock.querySelector('textarea');
   if (!textarea) console.warn('Textarea not found');
@@ -813,6 +814,7 @@ function handleSave(index) {
 
 // Function to handle cancel logic
 function cancelEdit(index) {
+  document.removeEventListener('keydown', handleKeyDown);
   editingIndex = null;
   transcriptEditor.classList.remove('has-editing');
   updateTranscriptState(index, 'normal');
