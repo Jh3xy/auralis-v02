@@ -940,10 +940,13 @@ async function resolveUploadDuration(uploadType, uploadData) {
   }
 }
 
+const MAX_POLL_MS = 5 * 60 * 1000; // 5 minutes
+// const MAX_POLL_MS = 10 * 1000; // 10 seconds — TESTING ONLY
 let pollingIntervalId = null;
 let pollingInFlight = false;
 let pollingJobId = null;
 let pollingContext = null;
+let pollingErrorCount = 0;
 
 function readActiveJob() {
   try {
@@ -979,6 +982,7 @@ function stopPolling() {
   pollingInFlight = false;
   pollingJobId = null;
   pollingContext = null;
+  pollingErrorCount = 0;
 }
 
 function getFailureMessage(reason) {
@@ -1112,7 +1116,23 @@ async function startPolling(jobId, context = {}) {
     pollingInFlight = true;
 
     try {
+      const pollStartedAt = pollingContext?.startedAt;
+      if (
+        typeof pollStartedAt === 'number' &&
+        Number.isFinite(pollStartedAt) &&
+        (Date.now() - pollStartedAt) > MAX_POLL_MS
+      ) {
+        const contextSnapshot = pollingContext;
+        stopPolling();
+        clearActiveJob();
+        stopElapsedTimer();
+        stopLoadingCopyRotation();
+        showRetryToast('default', contextSnapshot?.uploadType, contextSnapshot?.uploadData);
+        unlockUploadUI();
+        return;
+      }
       const response = await fetch(`${API_BASE}/api/jobs/${encodeURIComponent(jobId)}`);
+      pollingErrorCount = 0;
       if (!response.ok) {
         if (response.status === 404 || response.status >= 500) {
           const activeJob = readActiveJob();
@@ -1163,7 +1183,6 @@ async function startPolling(jobId, context = {}) {
       unlockUploadUI();
     } catch (error) {
       console.error('Polling error:', error);
-      const contextSnapshot = pollingContext;
       const activeJob = readActiveJob();
       const startedAt = Number(activeJob?.startedAt);
       const uploadWindowMs = 15 * 60 * 1000;
@@ -1171,6 +1190,10 @@ async function startPolling(jobId, context = {}) {
         console.warn('Polling transient error within upload window; retaining active job state.');
         return;
       }
+      pollingErrorCount += 1;
+      console.warn(`Polling error (${pollingErrorCount}/3):`, error);
+      if (pollingErrorCount < 3) return;
+      const contextSnapshot = pollingContext;
       stopPolling();
       clearActiveJob();
       stopElapsedTimer();
