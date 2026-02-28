@@ -106,9 +106,16 @@ export async function getAudioBlob() {
 export async function clearAudioBlob() {
   try {
     const db = await openDB();
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    tx.objectStore(STORE_NAME).delete('current');
-    console.log('Audio blob cleared from IndexedDB');
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      const request = store.delete('current');
+      request.onsuccess = () => {
+        console.log('Audio blob cleared from IndexedDB');
+        resolve();
+      };
+      request.onerror = (e) => reject(e.target.error);
+    });
   } catch (err) {
     console.warn('Failed to clear audio from IndexedDB:', err);
   }

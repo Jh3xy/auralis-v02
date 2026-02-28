@@ -792,6 +792,10 @@ header .menu-btn{
   line-height: 1rem;
   margin-top: 4rem;
   opacity: 0.3;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgb(from var(--color-warning) r g b / 0.3);
+  background-color: var(--color-warning-bg);
+  padding: 1rem;
 }
 .settings .wrap{
   padding: 3rem 1rem;
