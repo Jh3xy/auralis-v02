@@ -1706,6 +1706,16 @@ dashboardBtn.addEventListener("click", ()=>{
   
   // Small delay to let the fade-out animation play
   setTimeout(() => {
+    if (!savedState || typeof savedState !== 'object') {
+      const fallback = {
+        isCompleted: true,
+        time: new Date().toISOString(),
+        currentStep: 4
+      };
+      localStorage.setItem('auralis-onboarding', JSON.stringify(fallback));
+      document.documentElement.classList.add('onboarded');
+      return;
+    }
     // Set onboarding complete status to true, set new date and save again for data persistence
     savedState.isCompleted = true;
     savedState.time = new Date().toISOString();
