@@ -17,35 +17,31 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:ital,wght@0,300..800;1,300..800&family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" rel="stylesheet">
   <title> Auralis — Premium Transcription Interface.</title>
-  <script>
-    // User Onboarding Persistence - initialize localStorage properly
-    const storageKey = 'auralis-onboarding';
+  <script type="module">
+    // Auth gate: check Supabase session before revealing any UI
+    // We use a module script so we can import auth.js directly.
+    import { getSession } from './src/js/auth.js';
 
-    // Try to read existing state
-    let savedData = localStorage.getItem(storageKey);
-
-    if (!savedData) {
-      // No saved state — create a default and persist it
-      const userOnboarding = {
-        username: null,
-        isCompleted: false,
-        currentStep: 1,
-        time: new Date().toISOString()
-      };
-      savedData = JSON.stringify(userOnboarding);
-      localStorage.setItem(storageKey, savedData);
-      console.log('Created default onboarding in localStorage');
+    async function initAuthGate() {
+      try {
+        const session = await getSession();
+        if (session) {
+          console.log('Active Supabase session – showing dashboard');
+          document.documentElement.classList.add('onboarded');
+        } else {
+          console.log('No session – showing onboarding/auth');
+          document.documentElement.classList.remove('onboarded');
+        }
+      } catch (e) {
+        console.warn('Auth gate error:', e);
+        document.documentElement.classList.remove('onboarded');
+      } finally {
+        // Reveal the page now that we know the right state
+        document.documentElement.classList.add('auth-ready');
+      }
     }
 
-    const isOnboarded = JSON.parse(savedData);
-
-    if (isOnboarded && isOnboarded.isCompleted) {
-      console.log("Hiding Onboarding section")
-      document.documentElement.classList.add('onboarded');
-    } else {
-      console.log("Onboarding session starts now")
-      document.documentElement.classList.remove('onboarded');
-    }
+    initAuthGate();
   </script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script type="module" src="./src/script.js"></script>
@@ -106,21 +102,48 @@
 
             <div class="slider-step step-two">
               <div class="text-block">
-                <h1>What should we call you?</h1>
-                <p class="cta-desc">
-                  Enter your name to personalize your Auralis experience.
-                </p>
-                <div class="input-group">
-                  <label for="user-name-input">Your Name</label>
-                  <span class="err-msg">Please Enter Username</span>
-                  <input 
-                    type="text" 
-                    id="user-name-input" 
-                    placeholder="e.g. John Doe or John" 
-                    class="name-input"
-                  />
+                <!-- Auth tabs -->
+                <div class="auth-tabs flex gap-2" id="auth-tabs">
+                  <button class="auth-tab active" data-tab="signup">Sign Up</button>
+                  <button class="auth-tab" data-tab="login">Log In</button>
                 </div>
-                <button id="step-two-btn" class="cta-main" >Continue</button>
+
+                <!-- Sign Up Panel -->
+                <div class="auth-panel" id="auth-panel-signup">
+                  <h1>Create your account</h1>
+                  <p class="cta-desc">Enter your details to get started with Auralis.</p>
+                  <div class="input-group">
+                    <label for="signup-name-input">Display Name</label>
+                    <input type="text" id="signup-name-input" placeholder="e.g. John Doe" class="name-input" autocomplete="name" />
+                  </div>
+                  <div class="input-group">
+                    <label for="signup-email-input">Email</label>
+                    <input type="email" id="signup-email-input" placeholder="you@example.com" class="name-input" autocomplete="email" />
+                  </div>
+                  <div class="input-group">
+                    <label for="signup-password-input">Password</label>
+                    <input type="password" id="signup-password-input" placeholder="Min. 6 characters" class="name-input" autocomplete="new-password" />
+                  </div>
+                  <span class="err-msg" id="signup-err"></span>
+                  <button id="signup-btn" class="cta-main">Create Account</button>
+                </div>
+
+                <!-- Log In Panel -->
+                <div class="auth-panel hidden" id="auth-panel-login">
+                  <h1>Welcome back</h1>
+                  <p class="cta-desc">Log in to continue to your Auralis workspace.</p>
+                  <div class="input-group">
+                    <label for="login-email-input">Email</label>
+                    <input type="email" id="login-email-input" placeholder="you@example.com" class="name-input" autocomplete="email" />
+                  </div>
+                  <div class="input-group">
+                    <label for="login-password-input">Password</label>
+                    <input type="password" id="login-password-input" placeholder="Your password" class="name-input" autocomplete="current-password" />
+                  </div>
+                  <span class="err-msg" id="login-err"></span>
+                  <button id="login-btn" class="cta-main">Log In</button>
+                </div>
+
                 <p class="steps">Initial Setup • Step 2 of 4</p>
               </div>
             </div>
@@ -434,6 +457,9 @@
               <p class="username" id="username">--</p>
               <div class="plan uppercase"></div>
             </div>
+            <button id="sign-out-btn" class="sign-out-btn" title="Sign out">
+              <i data-lucide="log-out"></i>
+            </button>
           </div>
         </div>
       </aside>

@@ -6,10 +6,12 @@ import multer from 'multer';
 import { AssemblyAI } from 'assemblyai';
 import fs from 'fs';
 import path from 'path';
+import { createClient } from '@supabase/supabase-js';
 
 dotenv.config();
 
-console.log('Loaded key:', !!process.env.ASSEMBLYAI_API_KEY);
+console.log('Loaded AssemblyAI key:', !!process.env.ASSEMBLYAI_API_KEY);
+console.log('Loaded Supabase URL:', !!process.env.SUPABASE_URL);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -17,6 +19,37 @@ const HOST = '0.0.0.0';
 
 app.use(cors());
 app.use(express.json());
+
+// ─── Supabase admin client (service role — for JWT verification only) ───────
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+// ─── Auth middleware ─────────────────────────────────────────────────────────
+async function verifySupabaseToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Missing or invalid Authorization header.' });
+  }
+
+  const token = authHeader.slice(7); // strip "Bearer "
+
+  try {
+    const { data, error } = await supabaseAdmin.auth.getUser(token);
+
+    if (error || !data?.user) {
+      return res.status(401).json({ error: 'Invalid or expired token.' });
+    }
+
+    req.user = data.user; // attach user to request for downstream use
+    next();
+  } catch (err) {
+    console.error('Token verification error:', err.message);
+    return res.status(401).json({ error: 'Token verification failed.' });
+  }
+}
 
 // Ensure /tmp/uploads exists
 const uploadDir = '/tmp/uploads';
@@ -58,12 +91,14 @@ function cleanupTempFile(filePath) {
 }
 
 // POST endpoint that accepts BOTH file uploads AND URLs
-app.post('/api/upload', upload.single('audio'), async (req, res) => {
+// Protected by Supabase JWT auth
+app.post('/api/upload', verifySupabaseToken, upload.single('audio'), async (req, res) => {
   let filePath = null; // Track file path for cleanup
 
   try {
     const requestedLanguage = req.body?.language ?? null;
     console.debug('received-language', requestedLanguage);
+    console.debug('upload by user:', req.user.id);
 
     // Check if file was uploaded
     if (req.file) {
@@ -124,13 +159,6 @@ app.post('/api/upload', upload.single('audio'), async (req, res) => {
           audio: audioSource,
           speaker_labels: true,     // enable speaker diarization
           format_text: true,        // punctuation + capitalization / cleaned text
-
-          // other useful options you can toggle:
-          // auto_chapters: true,      // creates chapter objects with start/end + summary
-          // auto_highlights: true,    // generates highlight snippets
-          // punctuate: true,          // explicit punctuation option (if available)
-          // entity_detection: true,   // named entity info
-          // disfluencies: false       // remove filler words if true/false depending on API version
         };
 
         if (requestedLanguage === 'auto') {
@@ -170,7 +198,8 @@ app.post('/api/upload', upload.single('audio'), async (req, res) => {
   }
 });
 
-app.get('/api/jobs/:jobId', (req, res) => {
+// GET job status — protected by Supabase JWT auth
+app.get('/api/jobs/:jobId', verifySupabaseToken, (req, res) => {
   const job = jobs.get(req.params.jobId);
 
   if (!job) {

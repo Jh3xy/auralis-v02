@@ -11,11 +11,12 @@ import './styles/queries.css'
 
 
 // Import JS files here
-import { toggleClass, createInitials, formatTime, formatDate, saveToLocalStorage, getRelativeTime} from './js/utils.js'
+import { toggleClass, createInitials, formatTime, formatDate, saveToLocalStorage, getRelativeTime } from './js/utils.js'
 import { uploadAndTranscribe, validateTranscriptQuality } from "./js/transcribe.js";
 import { saveAudioBlob, getAudioBlob, clearAudioBlob } from './js/audioDB.js';
 import { downloadFile } from './js/exporter.js';
 import { eventHub } from "./js/eventhub.js";
+import { getUser, getSession, signOut } from './js/auth.js';
 
 
 const TRANSCRIPT_KEY = 'auralis-transcript'
@@ -174,13 +175,13 @@ function inflateUtterancesForRender(utterances = [], originalIndex = null) {
 
     const baseWords = Array.isArray(utterance.words) && utterance.words.length
       ? utterance.words.map((word) => ({
-          text: word.text,
-          start: word.start ?? null,
-          end: word.end ?? null
-        }))
+        text: word.text,
+        start: word.start ?? null,
+        end: word.end ?? null
+      }))
       : (text
-          ? text.split(/\s+/).map((wordText) => ({ text: wordText, start: null, end: null }))
-          : []);
+        ? text.split(/\s+/).map((wordText) => ({ text: wordText, start: null, end: null }))
+        : []);
 
     let foundTiming = false;
     let reason = 'no_original_match';
@@ -264,12 +265,24 @@ function buildSessionSnapshot(baseSession, utterances = []) {
 // Restore transcripts, etc on load
 document.addEventListener('DOMContentLoaded', async () => {
 
-  const storageKey = 'auralis-onboarding';
-  const onboarding = JSON.parse(localStorage.getItem(storageKey));
-  
-  if (onboarding && onboarding.username) {
-    createInitials(onboarding.username);
-    console.log('Username restored from localStorage');
+  // Restore username/initials from Supabase session (replaces old localStorage onboarding check)
+  const supabaseUser = await getUser();
+  if (supabaseUser) {
+    const displayName = supabaseUser.user_metadata?.display_name || supabaseUser.email || '';
+    createInitials(displayName);
+    const usernameEl = document.getElementById('username');
+    if (usernameEl) usernameEl.innerText = displayName;
+    console.log('User restored from Supabase session:', displayName);
+  }
+
+  // Sign-out button handler
+  const signOutBtn = document.getElementById('sign-out-btn');
+  if (signOutBtn) {
+    signOutBtn.addEventListener('click', async () => {
+      await signOut();
+      document.documentElement.classList.remove('onboarded');
+      location.reload();
+    });
   }
 
 
@@ -277,10 +290,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const currentSection = localStorage.getItem('current-section')
   if (currentSection) {
     // console.log(`${currentSection} section found`)
-    
+
     // loop through sections remove show class and add to matching section
     const sections = document.querySelectorAll('.section');
-    sections.forEach((section)=> {
+    sections.forEach((section) => {
       if (section.id === currentSection) {
         // Remove show class from all sections
         sections.forEach((sec) => sec.classList.remove('show'));
@@ -289,19 +302,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         // console.log(`Switched to section: ${currentSection} after reload`);
       }
     })
-    
+
     // Also update active class in navbar
     const navlinks = document.querySelectorAll('.nav-link')
-    
+
     // First, remove active from all nav links
     navlinks.forEach((navLink) => {
-      navLink.classList.remove('active') 
+      navLink.classList.remove('active')
     })
-    
+
     // Then add active to the matching one
     navlinks.forEach((navLink) => {
       if (navLink.dataset.id === currentSection) {
-        navLink.classList.add('active') 
+        navLink.classList.add('active')
         // console.log(`Activated nav link: ${currentSection}`)
       }
     })
@@ -335,7 +348,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
 
-  
+
   const savedOriginalRaw = localStorage.getItem('originalTranscript');
   const savedData = localStorage.getItem(TRANSCRIPT_KEY);
   if (!savedData && !savedOriginalRaw) {
@@ -392,7 +405,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.querySelector('.current-date').innerText = session.date ? formatDate(session.date, true) : '--';
   document.querySelector('.speakers').innerText = session.speakercount || '--';
   document.querySelector('.audio-duration').innerText = session.audio_duration ? formatTime(session.audio_duration * 1000) : '--';
-  
+
 
   renderTranscript(editableTranscript);
   updateState(projectSection, 'loaded');
@@ -466,7 +479,7 @@ export function showToast(msg, type = 'info', duration = 4500, cta = null) {
   // Create toast element
   const toast = document.createElement('div');
   toast.classList.add('toast', type);
-  
+
   // Create toast message
   const message = document.createElement('span');
   message.classList.add('toast-message');
@@ -477,9 +490,9 @@ export function showToast(msg, type = 'info', duration = 4500, cta = null) {
   i.dataset.lucide = type === 'error' ? 'circle-x' : type === 'success' ? 'circle-check' : type === 'warning' ? 'triangle-alert' : 'info';
   icon.appendChild(i);
   message.prepend(icon);
-  
-  
-  
+
+
+
   // Append message to toast
   toast.appendChild(message);
 
@@ -505,7 +518,7 @@ export function showToast(msg, type = 'info', duration = 4500, cta = null) {
     });
     toast.appendChild(ctaButton);
   }
-  
+
   // Append toast to container
   container.appendChild(toast);
   lucide.createIcons(); // Render icon in new toasts
@@ -526,7 +539,7 @@ export function showToast(msg, type = 'info', duration = 4500, cta = null) {
       }
     }, 300); // Match animation duration
   }, dismissDelay);
-  
+
   console.log(`Toast: ${msg} (${type})`);
 }
 
@@ -550,15 +563,15 @@ function renderTranscript(array) {
     return;
   }
   array.forEach(
-    (utterance, index)=> {
+    (utterance, index) => {
       let contentHTML = ''; //Initialize what content should be (textarea or span) based on editingIndex === index
       const startTime = formatTime(utterance.start)
       const endTime = formatTime(utterance.end)
-      
+
       // Check if editing index is equal to index to change contentHTML
       if (editingIndex === index) {
         const textvalue = utterance.words.map(
-          (word)=> {
+          (word) => {
             return `${word.text}`;
           }
         ).join(' ');
@@ -566,7 +579,7 @@ function renderTranscript(array) {
         console.log(contentHTML)
       } else {
         contentHTML = utterance.words.map(
-          (word)=> {
+          (word) => {
             return `<span data-start="${word.start}" data-end="${word.end}">${word.text}</span>`
           }
         ).join(' ');
@@ -574,7 +587,7 @@ function renderTranscript(array) {
 
       // Then Create dynamic speaker block now to use contentHTML
       const speakerBox = `
-        <div class="speaker-box flex items-start gap-8 ${editingIndex === index ? 'is-editing': ''}" data-index="${index}">
+        <div class="speaker-box flex items-start gap-8 ${editingIndex === index ? 'is-editing' : ''}" data-index="${index}">
           <div class="speaker-tag flex gap-1 shrink-0 flex-col">
             <span class="speaker">Speaker ${utterance.speaker}</span>
             <span class="speaker-metadata sub-text"> ${startTime} - ${endTime}</span>
@@ -621,13 +634,13 @@ function updateTranscriptState(index, mode) {
     currentSpeakerBlock.classList.add('is-editing');
     console.log(currentSpeakerBlock)
     console.log(currentSpeakerText)
-    
+
     // Mark the transcript body so ALL edit buttons get hidden globally
     transcriptEditor.classList.add('has-editing');
     // update text in editableTranscript directly
     console.log(editableTranscript[index].words)
     const textContent = editableTranscript[index].words.map(
-      (word)=> {
+      (word) => {
         return word.text
       }
     ).join(' ');
@@ -655,19 +668,19 @@ function updateTranscriptState(index, mode) {
  * Use event delegation on parent to avoid multiple event listners added
  */
 
-transcriptEditor.addEventListener("click", (e)=> {
-  
+transcriptEditor.addEventListener("click", (e) => {
+
   // grab the btns that were clicked using closest
   const editbtn = e.target.closest('.edit-btn');
   const savebtn = e.target.closest('.save-btn');
   const cancelbtn = e.target.closest('.cancel-btn');
   console.log(e.target)
-  
-  
+
+
   // check which among the btnsare not null
   if (editbtn) {
     if (hasClicked) {
-     // pause audio for editing
+      // pause audio for editing
       if (!transcriptAudio.paused) {
         transcriptAudio.pause();
         playBtn.innerHTML = `<i data-lucide="play"></i>`;
@@ -676,14 +689,14 @@ transcriptEditor.addEventListener("click", (e)=> {
     }
     const speakerbox = editbtn.closest('.speaker-box');
     //Force data type of data-index in speakerbox to be number if speakerbox exists
-    let index = speakerbox ? Number(speakerbox.dataset.index) : null; 
+    let index = speakerbox ? Number(speakerbox.dataset.index) : null;
     handleEdit(index);
     console.log(editbtn);
 
     // Add keydown for save here so it only applies when editing
     document.addEventListener('keydown', handleKeyDown);
   } else if (savebtn) {
-    
+
     if (hasClicked) {
       // play if paused for better UX after saving edits
       if (transcriptAudio.paused) {
@@ -691,16 +704,16 @@ transcriptEditor.addEventListener("click", (e)=> {
         playBtn.innerHTML = `<i data-lucide="pause"></i>`;
         lucide.createIcons();
       }
-      
+
     }
-    
+
     const speakerbox = savebtn.closest('.speaker-box');
-    let index = speakerbox ? Number(speakerbox.dataset.index) : null; 
+    let index = speakerbox ? Number(speakerbox.dataset.index) : null;
     handleSave(index);
     updateTranscriptStorage(index)
     console.log(savebtn)
   } else if (cancelbtn) {
-    
+
     if (hasClicked) {
       // play if paused for better UX after saving edits
       if (transcriptAudio.paused) {
@@ -711,7 +724,7 @@ transcriptEditor.addEventListener("click", (e)=> {
     }
 
     const speakerbox = cancelbtn.closest('.speaker-box');
-    let index = speakerbox ? Number(speakerbox.dataset.index) : null; 
+    let index = speakerbox ? Number(speakerbox.dataset.index) : null;
     cancelEdit(index)
   } else {
     return;
@@ -745,7 +758,7 @@ let lastSavedAt = null; // store auto-save timestamp globally
 function updateTranscriptStorage(index) {
   const raw = localStorage.getItem(TRANSCRIPT_KEY);
   if (!raw) return;
-  
+
   const parsed = JSON.parse(raw); // parsed is now the session object
 
   if (!Array.isArray(parsed.utterances)) parsed.utterances = [];
@@ -760,7 +773,7 @@ function updateTranscriptStorage(index) {
 
   saveToLocalStorage(TRANSCRIPT_KEY, parsed);
   console.log(`Storage updated at index ${index}`);
-  
+
   lastSavedAt = Date.now();
   updateSaveLabel();
 }
@@ -850,7 +863,7 @@ async function handleTranscription() {
 
   // UI CLEANUP: Reset the play button and slider here
   resetAudioUI();
-  
+
   // Use uploadType || uploadData variables instead of re-fetching them
   if (audioInput.files && audioInput.files[0]) {
     uploadType = 'file';
@@ -859,38 +872,38 @@ async function handleTranscription() {
     sizeInMB = uploadData.size / (1024 * 1024);
     audioSize.innerText = `${sizeInMB.toFixed(2)} MB`;
     uploadmetirc.innerText = `${sizeInMB.toFixed(2)} MB`;
-    
+
     if (sizeInMB >= 500) {
       alert('File too large. Maximum size is 500MB.');
       return;
     }
-    
+
     audioplayer.classList.remove('is-disabled');
-    
+
     await clearAudioBlob(); // clear previous persisted blob only after new file validation passes
     // Update Audio player in transcript
     const src = URL.createObjectURL(uploadData); // create a new src for audio element
-    currentAudioUrl = src;  
+    currentAudioUrl = src;
     // set transcriptAudio src to src varibale and load
     transcriptAudio.crossOrigin = 'anonymous';
     transcriptAudio.preload = 'metadata';
     transcriptAudio.src = src;
     transcriptAudio.load()
     await saveAudioBlob(uploadData); // uploadData is the File object 
-    
-    
+
+
   } else if (urlInput.value.trim()) {
     uploadType = 'url';
     uploadData = urlInput.value.trim();
-    
-    
+
+
     if (!uploadData.startsWith('http://') && !uploadData.startsWith('https://')) {
       // TODO: Show warning toasts here
       showToast('Please enter a valid URL starting with http:// or https://', 'warning');
       urlDesc.innerHTML = 'Please enter a valid URL starting with <span class="highlight">http://</span> or <span class="highlight">https://</span>';
       return;
     }
-    
+
     audioplayer.classList.add('is-disabled');
     await clearAudioBlob(); // clear previous persisted blob only after URL validation passes
     uploadmetirc.innerText = `--`;
@@ -1131,7 +1144,11 @@ async function startPolling(jobId, context = {}) {
         unlockUploadUI();
         return;
       }
-      const response = await fetch(`${API_BASE}/api/jobs/${encodeURIComponent(jobId)}`);
+      const pollToken = pollingContext?.authToken ?? null;
+      const pollHeaders = pollToken ? { 'Authorization': `Bearer ${pollToken}` } : {};
+      const response = await fetch(`${API_BASE}/api/jobs/${encodeURIComponent(jobId)}`, {
+        headers: pollHeaders
+      });
       pollingErrorCount = 0;
       if (!response.ok) {
         if (response.status === 404 || response.status >= 500) {
@@ -1264,11 +1281,21 @@ async function runAttempt(uploadType, uploadData) {
     });
 
     keepLockedForPolling = true;
-    await startPolling(clientJobId, { uploadType, uploadData, fileDuration, startedAt });
+
+    // Fetch auth token for protected backend API calls
+    const authSession = await getSession();
+    const authToken = authSession?.access_token ?? null;
+    if (!authToken) {
+      showToast('You must be logged in to transcribe audio.', 'error');
+      keepLockedForPolling = false;
+      return;
+    }
+
+    await startPolling(clientJobId, { uploadType, uploadData, fileDuration, startedAt, authToken });
 
     const language = getSetting('language') || 'en';
     console.debug('submit-language', language);
-    const uploadResponse = await uploadAndTranscribe(uploadType, uploadData, fileDuration, language, clientJobId);
+    const uploadResponse = await uploadAndTranscribe(uploadType, uploadData, fileDuration, language, clientJobId, authToken);
 
     const elapsed = Date.now() - start;
     if (elapsed < MIN_DISPLAY_TIME) {
@@ -1311,10 +1338,10 @@ async function runAttempt(uploadType, uploadData) {
 function resetAudioUI() {
   // Reset the play button to the 'play' icon
   playBtn.innerHTML = `<i data-lucide="play"></i>`;
-  
+
   // Reset the slider to the beginning
   audioRange.value = 0;
-  
+
   // Re-run Lucide to render the new icon
   if (window.lucide) {
     lucide.createIcons();
@@ -1400,9 +1427,9 @@ transcriptAudio.addEventListener("loadedmetadata", () => {
 
   // Set the slider max to seconds
   audioRange.max = transcriptAudio.duration;
-  
+
   // Reset 0
-  transcriptAudio.currentTime = 0; 
+  transcriptAudio.currentTime = 0;
   audioRange.value = 0;
 
   if (audioRange.value === audioRange.max) {
@@ -1442,7 +1469,7 @@ urlUploadBtn.addEventListener('click', () => {
 
 // Add event listeners to play btn in custom audio interface
 const playBtn = document.getElementById('play-btn')
-playBtn.addEventListener("click", ()=> {
+playBtn.addEventListener("click", () => {
   // set hasClicked to true for use in editing state logic to auto-pause when user clicks play
   hasClicked = true;
   // Check if audio element is paused
@@ -1462,7 +1489,7 @@ playBtn.addEventListener("click", ()=> {
 })
 
 const backBtn = document.querySelector('.backward-btn')
-backBtn.addEventListener("click", ()=> {
+backBtn.addEventListener("click", () => {
   transcriptAudio.currentTime = 0;
   audioRange.value = 0;
   playBtn.innerHTML = `<i data-lucide="play"></i>`
@@ -1470,7 +1497,7 @@ backBtn.addEventListener("click", ()=> {
 })
 
 const fowardBtn = document.querySelector('.forward-btn')
-fowardBtn.addEventListener("click", ()=> {
+fowardBtn.addEventListener("click", () => {
   transcriptAudio.currentTime = transcriptAudio.duration;
   audioRange.value = audioRange.max;
   playBtn.innerHTML = `<i data-lucide="play"></i>`
@@ -1484,16 +1511,16 @@ let speedIndex = 0; // start at 1x
 playbackBtn.addEventListener('click', () => {
   // Move to next speed, wrap back to 0 when we reach the end
   speedIndex = (speedIndex + 1) % speedSteps.length;
-  
+
   const newSpeed = speedSteps[speedIndex];
-  
+
   // Apply to the actual audio element - this affects playback AND karaoke timing
   // because timeupdate still fires based on real audio position
   transcriptAudio.playbackRate = newSpeed;
-  
+
   // Update the button label
   playbackBtn.innerHTML = `<i data-lucide="gauge"></i> ${newSpeed}x`;
-  
+
   // Re-render the lucide icon since we replaced innerHTML
   lucide.createIcons();
 });
@@ -1511,7 +1538,7 @@ exportBtn.addEventListener('click', () => {
   if (transcriptAudio && !transcriptAudio.paused) {
     transcriptAudio.pause();
   }
-  
+
   // Open modal with export options
   toggleClass(body, 'open-modal')
 
@@ -1537,7 +1564,7 @@ exportBTN.addEventListener('click', async () => {
 // Cancel Modal logic 
 const cancelIcon = document.querySelectorAll('.cancel-btn')
 cancelIcon.forEach(icon => {
-  icon.addEventListener('click', ()=> {
+  icon.addEventListener('click', () => {
     toggleClass(body, 'open-modal');
   })
 })
@@ -1668,53 +1695,131 @@ function goToStep(step) {
 window.goToStep = goToStep
 
 // Get the data we saved from index file to restore current step
+// (savedState is now managed by Supabase auth — kept for goToStep step restoration only)
 const savedState = JSON.parse(localStorage.getItem('auralis-onboarding'));
 
-// If the user isn't finished yet, restore their step
+// If a non-completed onboarding step is found, restore it (step tracking only)
 if (savedState && !savedState.isCompleted) {
   // This calls your function immediately when the script loads
   goToStep(savedState.currentStep);
 }
 
-const stepTwoBtn = document.getElementById('step-two-btn')
-const usernameInput = document.getElementById('user-name-input')
-stepTwoBtn.addEventListener("click", ()=> {
-  const username = usernameInput.value.trim()
-  const errMsg = document.querySelector('.err-msg')
-  if (username === '') {
-    console.log('Fill username first')
-    errMsg.style.display = 'block';
-  } else {
-    errMsg.style.display = 'none';
-    // Move to third step
-    goToStep(3)
-    // Create Initials
-    createInitials(username)
-  }
-})
+// ─── Auth Tab Switching ────────────────────────────────────────────────
+console.log('[auth] Setting up tab switching');
+const authTabs = document.querySelectorAll('.auth-tab');
+authTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    authTabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const target = tab.dataset.tab; // 'signup' or 'login'
+    document.querySelectorAll('.auth-panel').forEach(panel => panel.classList.add('hidden'));
+    document.getElementById(`auth-panel-${target}`).classList.remove('hidden');
+  });
+});
 
-usernameInput.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter') {
-    stepTwoBtn.click();
-  }
-})
+// ─── Sign Up ─────────────────────────────────────────────────────────────────
+const signUpBtn = document.getElementById('signup-btn');
+if (signUpBtn) {
+  signUpBtn.addEventListener('click', async () => {
+    const nameVal = document.getElementById('signup-name-input').value.trim();
+    const emailVal = document.getElementById('signup-email-input').value.trim();
+    const passVal = document.getElementById('signup-password-input').value;
+    const errEl = document.getElementById('signup-err');
+
+    if (!nameVal || !emailVal || !passVal) {
+      errEl.style.display = 'block';
+      errEl.innerText = 'Please fill in all fields.';
+      return;
+    }
+    if (passVal.length < 6) {
+      errEl.style.display = 'block';
+      errEl.innerText = 'Password must be at least 6 characters.';
+      return;
+    }
+
+    errEl.style.display = 'none';
+    signUpBtn.disabled = true;
+    signUpBtn.innerText = 'Creating account...';
+
+    const { signUp } = await import('./js/auth.js');
+    const { data, error } = await signUp(emailVal, passVal, nameVal);
+
+    signUpBtn.disabled = false;
+    signUpBtn.innerText = 'Create Account';
+
+    if (error) {
+      errEl.style.display = 'block';
+      errEl.innerText = error.message || 'Sign up failed. Please try again.';
+      return;
+    }
+
+    // Supabase may require email confirmation — check if session is available
+    if (!data?.session) {
+      showToast('Check your email to confirm your account, then log in.', 'info', 8000);
+      // Switch to log in tab
+      document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+      document.querySelector('.auth-tab[data-tab="login"]').classList.add('active');
+      document.querySelectorAll('.auth-panel').forEach(p => p.classList.add('hidden'));
+      document.getElementById('auth-panel-login').classList.remove('hidden');
+      return;
+    }
+
+    // Immediate session — proceed to step 3
+    createInitials(nameVal);
+    const usernameEl = document.getElementById('username');
+    if (usernameEl) usernameEl.innerText = nameVal;
+    goToStep(3);
+  });
+}
+
+// ─── Log In ────────────────────────────────────────────────────────────────────
+const loginBtn = document.getElementById('login-btn');
+if (loginBtn) {
+  loginBtn.addEventListener('click', async () => {
+    const emailVal = document.getElementById('login-email-input').value.trim();
+    const passVal = document.getElementById('login-password-input').value;
+    const errEl = document.getElementById('login-err');
+
+    if (!emailVal || !passVal) {
+      errEl.style.display = 'block';
+      errEl.innerText = 'Please enter your email and password.';
+      return;
+    }
+
+    errEl.style.display = 'none';
+    loginBtn.disabled = true;
+    loginBtn.innerText = 'Logging in...';
+
+    const { signIn: supaSignIn } = await import('./js/auth.js');
+    const { data, error } = await supaSignIn(emailVal, passVal);
+
+    loginBtn.disabled = false;
+    loginBtn.innerText = 'Log In';
+
+    if (error) {
+      errEl.style.display = 'block';
+      errEl.innerText = error.message || 'Login failed. Check your credentials.';
+      return;
+    }
+
+    const displayName = data?.user?.user_metadata?.display_name || data?.user?.email || '';
+    createInitials(displayName);
+    const usernameEl = document.getElementById('username');
+    if (usernameEl) usernameEl.innerText = displayName;
+    goToStep(3);
+  });
+}
 
 const dashboardBtn = document.getElementById('dashboard-link')
-dashboardBtn.addEventListener("click", ()=>{
+dashboardBtn.addEventListener("click", () => {
   // Add transitioning class for smoother animation
   document.documentElement.classList.add('transitioning');
-  
+
   // Small delay to let the fade-out animation play
   setTimeout(() => {
-    // Set onboarding complete status to true, set new date and save again for data persistence
-    savedState.isCompleted = true;
-    savedState.time = new Date().toISOString();
-    const newSavedState = JSON.stringify(savedState)
-    localStorage.setItem('auralis-onboarding', newSavedState);
-
-    // Add onboarded class to document Element to manually remove onboarding and replace with dashboard
+    // Supabase session is already persisted — just open the dashboard
     document.documentElement.classList.add('onboarded');
-    
+
     // Remove transitioning class after animation completes
     setTimeout(() => {
       document.documentElement.classList.remove('transitioning');
@@ -1742,7 +1847,7 @@ const navLinks = document.querySelectorAll('.nav-link')
 function handleSectionSwitch(clickedElement) {
   // Check if the clicked element has a data-id attribute
   const targetId = clickedElement.dataset.id;
-  
+
   if (targetId) {
     // Get all sections
     const sections = document.querySelectorAll('.section');
@@ -1753,7 +1858,7 @@ function handleSectionSwitch(clickedElement) {
     // console.log(currentSection)
     // Find the matching section
     let matchFound = false;
-    
+
     sections.forEach((section) => {
       if (section.id === targetId) {
         matchFound = true;
@@ -1764,7 +1869,7 @@ function handleSectionSwitch(clickedElement) {
         // console.log(`Switched to section: ${targetId}`);
       }
     });
-    
+
     // Log if no matching section was found
     if (!matchFound) {
       console.warn(`No section found with id: ${targetId}`);
@@ -1780,9 +1885,9 @@ toggleClass(navLinks, 'active', handleSectionSwitch)
 
 
 const uploadBtnSecondary = document.querySelector('.upload-btn-alt')
-uploadBtnSecondary.addEventListener('click', ()=> {
+uploadBtnSecondary.addEventListener('click', () => {
   const transcriptionNavLink = document.querySelector('[data-id="transcription"]');
-  transcriptionNavLink.click()  
+  transcriptionNavLink.click()
 })
 
 // Initialize theme toggle
@@ -1800,11 +1905,11 @@ if (emptyFooter) {
   emptyFooter.addEventListener('click', () => {
     // Find the Transcription nav link
     const transcriptionNavLink = document.querySelector('[data-id="transcription"]');
-    
+
     if (transcriptionNavLink) {
       // Trigger a click on the Transcription nav link
       transcriptionNavLink.click();
-      
+
       // console.log('Navigated to Transcription section from empty state');
     }
   });
@@ -1855,7 +1960,7 @@ document.addEventListener('click', (e) => {
   const isMenuOpen = document.body.classList.contains('open-nav');
   const clickedInsideSidebar = sidebar.contains(e.target);
   const clickedMenuBtn = menuBtn.contains(e.target);
-  
+
   // If menu is open, click is outside sidebar, and not on menu button
   if (isMenuOpen && !clickedInsideSidebar && !clickedMenuBtn) {
     closeMobileMenu();
@@ -1874,7 +1979,7 @@ if (sidebar) {
 const urlBox = document.getElementById('url-audio-input')
 const urlButton = document.querySelector('.url-btn')
 
-urlButton.addEventListener("click", ()=> {
+urlButton.addEventListener("click", () => {
   // Swap audio upload methods
   const btn = document.querySelector('.url-btn')
   const dock = document.querySelector('.loading-dock')

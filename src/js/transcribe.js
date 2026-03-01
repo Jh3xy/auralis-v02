@@ -94,7 +94,7 @@ export function validateTranscriptQuality(transcript, fileDuration = null) {
   };
 }
 
-export async function uploadAndTranscribe(type, data, fileDuration = null, language = null, jobId = null) {
+export async function uploadAndTranscribe(type, data, fileDuration = null, language = null, jobId = null, token = null) {
   const emptyMetrics = {
     wordCount: 0,
     avgConfidence: null,
@@ -104,6 +104,11 @@ export async function uploadAndTranscribe(type, data, fileDuration = null, langu
   try {
     let body;
     const headers = {};
+
+    // Attach JWT if provided
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
 
     if (type === 'file') {
       const formData = new FormData();

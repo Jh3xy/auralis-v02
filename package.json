@@ -12,6 +12,7 @@
     "vite": "^7.2.4"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.98.0",
     "docx": "^9.6.0",
     "jspdf": "^4.2.0"
   }
