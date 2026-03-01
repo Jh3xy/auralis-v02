@@ -47,6 +47,19 @@ const client = new AssemblyAI({
 
 // In-memory store for refresh-safe polling jobs.
 const jobs = new Map();
+const JOB_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+function evictStaleJobs() {
+  const cutoff = Date.now() - JOB_TTL_MS;
+  for (const [id, job] of jobs) {
+    if (job.createdAt < cutoff) {
+      jobs.delete(id);
+      console.log(`Evicted stale job: ${id}`);
+    }
+  }
+}
+
+setInterval(evictStaleJobs, 10 * 60 * 1000); // every 10 minutes
 
 function cleanupTempFile(filePath) {
   if (filePath && fs.existsSync(filePath)) {
