@@ -1653,7 +1653,7 @@ if (transcriptTitleEl) attachTitleEdit(transcriptTitleEl);
 
 
 
-// Onboarding Setup with LocalStorage
+// Onboarding Setup
 let username;
 
 const progressBar = document.querySelector('.progress-bars');
