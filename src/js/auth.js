@@ -7,11 +7,15 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   console.error(
     '[auth] Missing Supabase env vars. ' +
-    'Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.'
+    'Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your frontend .env file.'
   );
 }
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Initialize Supabase client for frontend use (only if env vars are present) - prevents hard app crash
+export const supabase = SUPABASE_URL && SUPABASE_ANON_KEY
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
 
 /**
  * Sign up a new user.

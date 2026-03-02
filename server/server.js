@@ -3,12 +3,19 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import multer from 'multer';
-import { AssemblyAI } from 'assemblyai';
 import fs from 'fs';
 import path from 'path';
+import { AssemblyAI } from 'assemblyai';
 import { createClient } from '@supabase/supabase-js';
 
 dotenv.config();
+
+// ─── .env debug log ───────────────────────────────────────────────────────── 
+
+console.log("SUPABASE URL:", process.env.SUPABASE_URL);
+
+// ─── .env debug log ───────────────────────────────────────────────────────── 
+
 
 console.log('Loaded AssemblyAI key:', !!process.env.ASSEMBLYAI_API_KEY);
 console.log('Loaded Supabase URL:', !!process.env.SUPABASE_URL);
@@ -57,7 +64,7 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Configure multer with diskStorage (safer on 512MB free tier)
+// Configure multer with diskStorage (safer on 512MB free tier service - Render)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
