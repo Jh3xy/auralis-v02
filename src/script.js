@@ -1421,6 +1421,8 @@ transcriptAudio.addEventListener("timeupdate", () => {
 
 // Set the audio time on metadata load for better UX
 transcriptAudio.addEventListener("loadedmetadata", () => {
+  console.log('loadedmetadata', transcriptAudio.duration)
+
   // Convert duration seconds to MS for your utility
   const durationMs = transcriptAudio.duration * 1000;
   audioTime.innerText = formatTime(durationMs);
@@ -1442,7 +1444,6 @@ transcriptAudio.addEventListener('error', (e) => {
   console.error('Audio error event', e, transcriptAudio.error);
 });
 transcriptAudio.addEventListener('canplay', () => console.log('canplay', transcriptAudio.duration));
-transcriptAudio.addEventListener('loadedmetadata', () => console.log('loadedmetadata', transcriptAudio.duration));
 transcriptAudio.addEventListener('play', () => console.log('play event'));
 
 audioRange.addEventListener('input', () => {
@@ -1817,7 +1818,8 @@ dashboardBtn.addEventListener("click", () => {
 
   // Small delay to let the fade-out animation play
   setTimeout(() => {
-    // Supabase session is already persisted — just open the dashboard
+    
+    // Add onboarded class to document Element to manually remove onboarding and replace with dashboard
     document.documentElement.classList.add('onboarded');
 
     // Remove transitioning class after animation completes
