@@ -49,6 +49,209 @@ let loadingCopyIntervalId = null;
 
 const transcriptAudio = document.getElementById('audio-engine');
 
+
+
+// ─── Onboarding Setup ────────────────────────────────────────────────
+let username;
+const progressBar = document.querySelector('.progress-bars');
+const sliderTrack = document.querySelector('.slider-track');
+
+function goToStep(step) {
+  const storageKey = 'auralis-onboarding';
+  let onboarding = null;
+
+  try {
+    onboarding = JSON.parse(localStorage.getItem(storageKey));
+  } catch (e) {
+    console.warn('auralis-onboarding is invalid JSON, resetting.', e);
+  }
+
+  // If nothing valid is found, create a default object
+  if (!onboarding || typeof onboarding !== 'object') {
+    onboarding = {
+      isCompleted: false,
+      currentStep: 1,
+      time: new Date().toISOString()
+    };
+  }
+
+  // update onboarding current step and Save the new step permanently
+  onboarding.currentStep = step;
+  localStorage.setItem(storageKey, JSON.stringify(onboarding));
+
+  console.log('onboarding:', onboarding);
+
+  // Update elements for sliding effects (guard in case DOM nodes are missing)
+  if (progressBar) progressBar.dataset.step = onboarding.currentStep;
+  if (sliderTrack) sliderTrack.dataset.step = onboarding.currentStep;
+}
+
+
+// expose goToStep function globally so the HTML buttons can access it
+window.goToStep = goToStep
+
+/**
+ * Get the data we saved from index file to restore current step
+ * (savedState is now managed by Supabase auth — kept for goToStep step restoration only)
+ */
+const savedState = JSON.parse(localStorage.getItem('auralis-onboarding'));
+if (savedState && !savedState.isCompleted) {
+  // This calls your function immediately when the script loads
+  goToStep(savedState.currentStep);
+}
+
+// ─── Auth Tab Switching ────────────────────────────────────────────────
+console.log('[auth] Setting up tab switching');
+const authTabs = document.querySelectorAll('.auth-tab');
+authTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    authTabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    // scroll automatically to show the full tab button.
+    tab.scrollIntoView({ 
+      behavior: 'smooth', 
+      inline: 'center', 
+      block: 'nearest' 
+    });
+
+    const targetSection = tab.dataset.tab; // 'signup' / 'login' / 'forgotten-password'
+    document.querySelectorAll('.auth-panel').forEach(panel => panel.classList.add('hidden'));
+    document.getElementById(`auth-panel-${targetSection}`).classList.remove('hidden');
+  });
+});
+
+// ─── Sign Up ─────────────────────────────────────────────────────────────────
+const signUpBtn = document.getElementById('signup-btn');
+if (signUpBtn) {
+  signUpBtn.addEventListener('click', async () => {
+    const nameVal = document.getElementById('signup-name-input').value.trim();
+    const emailVal = document.getElementById('signup-email-input').value.trim();
+    const passVal = document.getElementById('signup-password-input').value;
+    const errEl = document.getElementById('signup-err');
+
+    if (!nameVal || !emailVal || !passVal) {
+      errEl.style.display = 'block';
+      errEl.innerText = 'Please fill in all fields.';
+      return;
+    }
+    if (passVal.length < 6) {
+      errEl.style.display = 'block';
+      errEl.innerText = 'Password must be at least 6 characters.';
+      return;
+    }
+
+    errEl.style.display = 'none';
+    signUpBtn.disabled = true;
+    signUpBtn.innerText = 'Creating account...';
+
+    const { signUp } = await import('./js/auth.js');
+    const { data, error } = await signUp(emailVal, passVal, nameVal);
+
+    signUpBtn.disabled = false;
+    signUpBtn.innerText = 'Create Account';
+
+    if (error) {
+      errEl.style.display = 'block';
+      errEl.innerText = error.message || 'Sign up failed. Please try again.';
+      return;
+    }
+
+    // Supabase may require email confirmation — check if session is available
+    if (!data?.session) {
+      showToast('Check your email to confirm your account, then log in.', 'info', 8000);
+      // Switch to log in tab
+      document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+      document.querySelector('.auth-tab[data-tab="login"]').classList.add('active');
+      document.querySelectorAll('.auth-panel').forEach(p => p.classList.add('hidden'));
+      document.getElementById('auth-panel-login').classList.remove('hidden');
+      return;
+    }
+
+    // Immediate session — proceed to step 3
+    createInitials(nameVal);
+    const usernameEl = document.getElementById('username');
+    if (usernameEl) usernameEl.innerText = nameVal;
+    goToStep(3);
+  });
+}
+
+// ─── Log In ────────────────────────────────────────────────────────────────────
+const loginBtn = document.getElementById('login-btn');
+if (loginBtn) {
+  loginBtn.addEventListener('click', async () => {
+    const emailVal = document.getElementById('login-email-input').value.trim();
+    const passVal = document.getElementById('login-password-input').value;
+    const errEl = document.getElementById('login-err');
+
+    if (!emailVal || !passVal) {
+      errEl.style.display = 'block';
+      errEl.innerText = 'Please enter your email and password.';
+      return;
+    }
+
+    errEl.style.display = 'none';
+    loginBtn.disabled = true;
+    loginBtn.innerText = 'Logging in...';
+
+    const { signIn: supaSignIn } = await import('./js/auth.js');
+    const { data, error } = await supaSignIn(emailVal, passVal);
+
+    loginBtn.disabled = false;
+    loginBtn.innerText = 'Log In';
+
+    if (error) {
+      errEl.style.display = 'block';
+      errEl.innerText = error.message || 'Login failed. Check your credentials.';
+      return;
+    }
+
+    const displayName = data?.user?.user_metadata?.display_name || data?.user?.email || '';
+    createInitials(displayName);
+    const usernameEl = document.getElementById('username');
+    if (usernameEl) usernameEl.innerText = displayName;
+    goToStep(3);
+  });
+}
+
+const dashboardBtn = document.getElementById('dashboard-link')
+dashboardBtn.addEventListener("click", () => {
+  // Add transitioning class for smoother animation
+  document.documentElement.classList.add('transitioning');
+
+  // Update onboarding state in localStorage to mark as completed
+  const storageKey = 'auralis-onboarding';
+  let onboarding = null;
+  try {
+    onboarding = JSON.parse(localStorage.getItem(storageKey));
+  } catch (e) {
+    console.warn('auralis-onboarding is invalid JSON, resetting.', e);
+  }
+  // If nothing valid is found, create a default object
+  if (!onboarding || typeof onboarding !== 'object') {
+    onboarding = {
+      isCompleted: false,
+      currentStep: 1,
+      time: new Date().toISOString()
+    };
+  }
+  // Set onboarding status to completed
+  onboarding.isCompleted = true;
+  console.log('Final Setup', onboarding)
+  localStorage.setItem(storageKey, JSON.stringify(onboarding))
+
+  // Small delay to let the fade-out animation play
+  setTimeout(() => {
+    
+    // Add onboarded class to document Element to manually remove onboarding and replace with dashboard
+    document.documentElement.classList.add('onboarded');
+    // Remove transitioning class after animation completes
+    setTimeout(() => {
+      document.documentElement.classList.remove('transitioning');
+    }, 500);
+  }, 400); // Small delay for smoothness
+})
+
+
 function restoreAudioFromIndexedDBForPlayer() {
   return getAudioBlob().then((savedBlob) => {
     if (savedBlob) {
@@ -1651,198 +1854,7 @@ const transcriptTitleEl = document.querySelector('.transcript-title');
 if (transcriptTitleEl) attachTitleEdit(transcriptTitleEl);
 
 
-
-
-// Onboarding Setup
-let username;
-
-const progressBar = document.querySelector('.progress-bars');
-const sliderTrack = document.querySelector('.slider-track');
-
-function goToStep(step) {
-  const storageKey = 'auralis-onboarding';
-  let onboarding = null;
-
-  try {
-    onboarding = JSON.parse(localStorage.getItem(storageKey));
-  } catch (e) {
-    console.warn('auralis-onboarding is invalid JSON, resetting.', e);
-  }
-
-  // If nothing valid is found, create a default object
-  if (!onboarding || typeof onboarding !== 'object') {
-    onboarding = {
-      isCompleted: false,
-      currentStep: 1,
-      time: new Date().toISOString()
-    };
-  }
-
-  // update onboarding current step
-  onboarding.currentStep = step;
-
-  // Save the new step permanently
-  localStorage.setItem(storageKey, JSON.stringify(onboarding));
-
-  console.log('onboarding:', onboarding);
-
-  // Update elements for sliding effects (guard in case DOM nodes are missing)
-  if (progressBar) progressBar.dataset.step = onboarding.currentStep;
-  if (sliderTrack) sliderTrack.dataset.step = onboarding.currentStep;
-}
-
-
-// expose goToStep function globally so the HTML buttons can access it
-window.goToStep = goToStep
-
-// Get the data we saved from index file to restore current step
-// (savedState is now managed by Supabase auth — kept for goToStep step restoration only)
-const savedState = JSON.parse(localStorage.getItem('auralis-onboarding'));
-
-// If a non-completed onboarding step is found, restore it (step tracking only)
-if (savedState && !savedState.isCompleted) {
-  // This calls your function immediately when the script loads
-  goToStep(savedState.currentStep);
-}
-
-// ─── Auth Tab Switching ────────────────────────────────────────────────
-console.log('[auth] Setting up tab switching');
-const authTabs = document.querySelectorAll('.auth-tab');
-authTabs.forEach(tab => {
-  tab.addEventListener('click', () => {
-    authTabs.forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    const target = tab.dataset.tab; // 'signup' or 'login'
-    document.querySelectorAll('.auth-panel').forEach(panel => panel.classList.add('hidden'));
-    document.getElementById(`auth-panel-${target}`).classList.remove('hidden');
-  });
-});
-
-// ─── Sign Up ─────────────────────────────────────────────────────────────────
-const signUpBtn = document.getElementById('signup-btn');
-if (signUpBtn) {
-  signUpBtn.addEventListener('click', async () => {
-    const nameVal = document.getElementById('signup-name-input').value.trim();
-    const emailVal = document.getElementById('signup-email-input').value.trim();
-    const passVal = document.getElementById('signup-password-input').value;
-    const errEl = document.getElementById('signup-err');
-
-    if (!nameVal || !emailVal || !passVal) {
-      errEl.style.display = 'block';
-      errEl.innerText = 'Please fill in all fields.';
-      return;
-    }
-    if (passVal.length < 6) {
-      errEl.style.display = 'block';
-      errEl.innerText = 'Password must be at least 6 characters.';
-      return;
-    }
-
-    errEl.style.display = 'none';
-    signUpBtn.disabled = true;
-    signUpBtn.innerText = 'Creating account...';
-
-    const { signUp } = await import('./js/auth.js');
-    const { data, error } = await signUp(emailVal, passVal, nameVal);
-
-    signUpBtn.disabled = false;
-    signUpBtn.innerText = 'Create Account';
-
-    if (error) {
-      errEl.style.display = 'block';
-      errEl.innerText = error.message || 'Sign up failed. Please try again.';
-      return;
-    }
-
-    // Supabase may require email confirmation — check if session is available
-    if (!data?.session) {
-      showToast('Check your email to confirm your account, then log in.', 'info', 8000);
-      // Switch to log in tab
-      document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-      document.querySelector('.auth-tab[data-tab="login"]').classList.add('active');
-      document.querySelectorAll('.auth-panel').forEach(p => p.classList.add('hidden'));
-      document.getElementById('auth-panel-login').classList.remove('hidden');
-      return;
-    }
-
-    // Immediate session — proceed to step 3
-    createInitials(nameVal);
-    const usernameEl = document.getElementById('username');
-    if (usernameEl) usernameEl.innerText = nameVal;
-    goToStep(3);
-  });
-}
-
-// ─── Log In ────────────────────────────────────────────────────────────────────
-const loginBtn = document.getElementById('login-btn');
-if (loginBtn) {
-  loginBtn.addEventListener('click', async () => {
-    const emailVal = document.getElementById('login-email-input').value.trim();
-    const passVal = document.getElementById('login-password-input').value;
-    const errEl = document.getElementById('login-err');
-
-    if (!emailVal || !passVal) {
-      errEl.style.display = 'block';
-      errEl.innerText = 'Please enter your email and password.';
-      return;
-    }
-
-    errEl.style.display = 'none';
-    loginBtn.disabled = true;
-    loginBtn.innerText = 'Logging in...';
-
-    const { signIn: supaSignIn } = await import('./js/auth.js');
-    const { data, error } = await supaSignIn(emailVal, passVal);
-
-    loginBtn.disabled = false;
-    loginBtn.innerText = 'Log In';
-
-    if (error) {
-      errEl.style.display = 'block';
-      errEl.innerText = error.message || 'Login failed. Check your credentials.';
-      return;
-    }
-
-    const displayName = data?.user?.user_metadata?.display_name || data?.user?.email || '';
-    createInitials(displayName);
-    const usernameEl = document.getElementById('username');
-    if (usernameEl) usernameEl.innerText = displayName;
-    goToStep(3);
-  });
-}
-
-const dashboardBtn = document.getElementById('dashboard-link')
-dashboardBtn.addEventListener("click", () => {
-  // Add transitioning class for smoother animation
-  document.documentElement.classList.add('transitioning');
-
-  // Small delay to let the fade-out animation play
-  setTimeout(() => {
-    
-    // Add onboarded class to document Element to manually remove onboarding and replace with dashboard
-    document.documentElement.classList.add('onboarded');
-
-    // Remove transitioning class after animation completes
-    setTimeout(() => {
-      document.documentElement.classList.remove('transitioning');
-    }, 500);
-  }, 400); // Small delay for smoothness
-})
-
-const onboardingUploadAudioBtn = document.getElementById('onboarding-upload-audio-btn')
-onboardingUploadAudioBtn.addEventListener('click', () => {
-  dashboardBtn.click();
-  setTimeout(() => {
-    label.click();
-  }, 450);
-})
-
-
-
 // Handle active class toggles
-
-
-
 // Nav links
 const navLinks = document.querySelectorAll('.nav-link')
 // Callback function to handle section switching

@@ -675,7 +675,8 @@ main .steps {
 }
 .text-block {
   width: 90%;
-  margin: 2rem auto 0;
+  margin: 0 auto 0;
+  padding-bottom: 2rem;
 }
 .text-block h1 {
   letter-spacing: -1px;
@@ -717,12 +718,13 @@ main .steps {
 
 .input-group {
   max-width: 400px;
-  margin: 2.5rem auto 0;
+  margin: .5rem auto 0;
   text-align: left;
 }
 
 .input-group label {
   display: block;
+  padding: 0;
   font-size: var(--fs-xs);
   font-weight: var(--fw-semibold);
   text-transform: uppercase;
@@ -731,39 +733,82 @@ main .steps {
   margin-bottom: 0.5rem;
 }
 
+.input-group label:hover {
+  border: 1px solid transparent;
+}
+
 /* Auth Tabs & Panels */
 .auth-tabs {
   margin-bottom: 2rem;
-  border-bottom: 1px solid var(--border-subtle);
   width: 100%;
-  max-width: 400px;
+  max-width: 500px;
   margin-left: auto;
   margin-right: auto;
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid var(--border-subtle);
+  background: linear-gradient( to bottom, rgba(11, 12, 16, 0.2) 0%, rgba(11, 12, 16, 0.1) 100% );
+  
+  /* Enable horizontal scroll */
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  scroll-behavior: smooth;    /* Makes the slide animation smooth */
+  scroll-snap-type: x mandatory; /* Enables snapping on the x-axis */
+}
+/* Hide scrollbar for a cleaner look */
+.auth-tabs::-webkit-scrollbar {
+  display: none;
+}
+.auth-tabs {
+  -ms-overflow-style: none;  
+  scrollbar-width: none;  
 }
 
+
 .auth-tab {
+  flex-shrink: 0;
+  border: none;
+  width: 160px;
+  background: none;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  white-space: nowrap;
   padding: 0.75rem 1.5rem;
   font-size: var(--fs-sm);
-  font-weight: var(--fw-semibold);
   color: var(--text-muted);
-  background: none;
-  border: none;
-  cursor: pointer;
-  position: relative;
+  scroll-snap-align: center;  /* When clicked/scrolled, snap to the middle */
+  font-weight: var(--fw-semibold);
   transition: color var(--duration-fast) ease;
 }
 
-.auth-tab.active {
-  color: var(--color-highlight);
-}
-
-.auth-tab.active::after {
+.auth-tab::after {
   content: "";
   position: absolute;
   bottom: -1px;
   left: 0;
   right: 0;
   height: 2px;
+  transition: var(--transition-base);
+}
+
+.auth-tab.active {
+  color: var(--color-highlight);
+}
+
+.auth-tab:hover {
+  color: var(--text-main);
+}
+
+.auth-tab:hover::after {
+  background-color: var(--color-accent-2);
+  box-shadow: 0 0 10px var(--color-accent-2);
+}
+
+.auth-tab.active::after {
   background-color: var(--color-highlight);
   box-shadow: 0 0 10px var(--color-highlight);
 }
@@ -771,6 +816,18 @@ main .steps {
 .auth-panel {
   width: 100%;
   animation: fadeIn var(--duration-normal) ease;
+}
+
+.auth-panel .sub-text {
+  text-transform: none;
+  font-size: var(--fs-xs);
+}
+
+.slider-three .sub-text {
+  max-width: 350px;
+  text-transform: none;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-regular);
 }
 
 @keyframes fadeIn {
