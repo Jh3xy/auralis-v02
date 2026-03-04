@@ -16,7 +16,7 @@ import { uploadAndTranscribe, validateTranscriptQuality } from "./js/transcribe.
 import { saveAudioBlob, getAudioBlob, clearAudioBlob } from './js/audioDB.js';
 import { downloadFile } from './js/exporter.js';
 import { eventHub } from "./js/eventhub.js";
-import { getUser, getSession, signOut } from './js/auth.js';
+import { getUser, getSession, signOut, signInAnonymously } from './js/auth.js';
 
 
 const TRANSCRIPT_KEY = 'auralis-transcript'
@@ -214,7 +214,11 @@ if (loginBtn) {
 }
 
 const dashboardBtn = document.getElementById('dashboard-link')
-dashboardBtn.addEventListener("click", () => {
+dashboardBtn.addEventListener("click", async () => {
+  const { error: anonError } = await signInAnonymously();
+  if (anonError) {
+    console.warn('[auth] Anonymous sign-in failed; continuing guest transition.', anonError);
+  }
   localStorage.setItem('auralis-guest', 'true');
   document.documentElement.classList.add('transitioning');
   setTimeout(() => {
@@ -1464,9 +1468,7 @@ async function runAttempt(uploadType, uploadData) {
     const authSession = await getSession();
     const authToken = authSession?.access_token ?? null;
     if (!authToken) {
-      showToast('You must be logged in to transcribe audio.', 'error');
-      keepLockedForPolling = false;
-      return;
+      console.warn('[transcribe] No auth token — request will be sent without Authorization header.');
     }
 
     await startPolling(clientJobId, { uploadType, uploadData, fileDuration, startedAt, authToken });

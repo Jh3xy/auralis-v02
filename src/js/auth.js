@@ -59,6 +59,16 @@ export async function signOut() {
 }
 
 /**
+ * Sign in as an anonymous (guest) user.
+ * Returns a real Supabase session with no email or password.
+ * @returns {{ data, error }}
+ */
+export async function signInAnonymously() {
+  const { data, error } = await supabase.auth.signInAnonymously();
+  return { data, error };
+}
+
+/**
  * Get the current active session (includes JWT access_token).
  * @returns {Promise<Session|null>}
  */
