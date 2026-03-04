@@ -213,6 +213,42 @@ if (loginBtn) {
   });
 }
 
+const forgotBtn = document.getElementById('forgot-btn');
+if (forgotBtn) {
+  forgotBtn.addEventListener('click', async () => {
+    const emailVal = document.getElementById('forgotten-password-input').value.trim();
+    const errEl = document.getElementById('forgot-err');
+
+    if (!emailVal) {
+      errEl.style.display = 'block';
+      errEl.innerText = 'Please enter your email.';
+      return;
+    }
+
+    errEl.style.display = 'none';
+    forgotBtn.disabled = true;
+    forgotBtn.innerText = 'Sending...';
+
+    const { resetPasswordForEmail } = await import('./js/auth.js');
+    const { error } = await resetPasswordForEmail(emailVal);
+
+    forgotBtn.disabled = false;
+    forgotBtn.innerText = 'Send Mail';
+
+    if (error) {
+      errEl.style.display = 'block';
+      errEl.innerText = error.message || 'Failed to send password reset email.';
+      return;
+    }
+
+    showToast('Password reset email sent. Check your inbox.', 'info', 8000);
+    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+    document.querySelector('.auth-tab[data-tab="login"]').classList.add('active');
+    document.querySelectorAll('.auth-panel').forEach(p => p.classList.add('hidden'));
+    document.getElementById('auth-panel-login').classList.remove('hidden');
+  });
+}
+
 const dashboardBtn = document.getElementById('dashboard-link')
 dashboardBtn.addEventListener("click", async () => {
   const { error: anonError } = await signInAnonymously();

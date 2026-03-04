@@ -51,6 +51,18 @@ export async function signIn(email, password) {
 }
 
 /**
+ * Send password reset email to a user.
+ * @param {string} email
+ * @returns {{ data, error }}
+ */
+export async function resetPasswordForEmail(email) {
+  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin
+  });
+  return { data, error };
+}
+
+/**
  * Sign out the current user.
  */
 export async function signOut() {
