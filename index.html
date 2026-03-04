@@ -25,7 +25,9 @@
     async function initAuthGate() {
       try {
         const session = await getSession();
-        if (session) {
+        // Guest skip flag allows dashboard access without an active auth session.
+        const isGuest = localStorage.getItem('auralis-guest') === 'true';
+        if (session || isGuest) {
           console.log('Active Supabase session – showing dashboard');
           document.documentElement.classList.add('onboarded');
         } else {
@@ -220,7 +222,7 @@
               <div class="text-block">
                 <h1>Ready to Listen?</h1>
                 <p class="cta-desc sub-text">
-                  Skip to Dashboard to upload your first sermon/meeting or login to unlock full features.
+                  Skip to Dashboard to upload your first sermon, or log in for full access.
                 </p>
                 <button class="cta-main" id="onboarding-upload-audio-btn" onclick="goToStep(4)">
                   <i data-lucide="user-round-key"></i>

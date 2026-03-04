@@ -215,41 +215,15 @@ if (loginBtn) {
 
 const dashboardBtn = document.getElementById('dashboard-link')
 dashboardBtn.addEventListener("click", () => {
-  // Add transitioning class for smoother animation
+  localStorage.setItem('auralis-guest', 'true');
   document.documentElement.classList.add('transitioning');
-
-  // Update onboarding state in localStorage to mark as completed
-  const storageKey = 'auralis-onboarding';
-  let onboarding = null;
-  try {
-    onboarding = JSON.parse(localStorage.getItem(storageKey));
-  } catch (e) {
-    console.warn('auralis-onboarding is invalid JSON, resetting.', e);
-  }
-  // If nothing valid is found, create a default object
-  if (!onboarding || typeof onboarding !== 'object') {
-    onboarding = {
-      isCompleted: false,
-      currentStep: 1,
-      time: new Date().toISOString()
-    };
-  }
-  // Set onboarding status to completed
-  onboarding.isCompleted = true;
-  console.log('Final Setup', onboarding)
-  localStorage.setItem(storageKey, JSON.stringify(onboarding))
-
-  // Small delay to let the fade-out animation play
   setTimeout(() => {
-    
-    // Add onboarded class to document Element to manually remove onboarding and replace with dashboard
     document.documentElement.classList.add('onboarded');
-    // Remove transitioning class after animation completes
     setTimeout(() => {
       document.documentElement.classList.remove('transitioning');
     }, 500);
-  }, 400); // Small delay for smoothness
-})
+  }, 400);
+});
 
 
 function restoreAudioFromIndexedDBForPlayer() {
@@ -483,6 +457,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (signOutBtn) {
     signOutBtn.addEventListener('click', async () => {
       await signOut();
+      localStorage.removeItem('auralis-guest');
       document.documentElement.classList.remove('onboarded');
       location.reload();
     });
