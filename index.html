@@ -25,11 +25,24 @@
     async function initAuthGate() {
       try {
         const session = await getSession();
-        // Guest skip flag allows dashboard access without an active auth session.
         const isGuest = localStorage.getItem('auralis-guest') === 'true';
-        if (session || isGuest) {
+
+        if (session) {
           console.log('Active Supabase session – showing dashboard');
           document.documentElement.classList.add('onboarded');
+        } else if (isGuest) {
+          // Guest flag exists but session is gone — re-create the anonymous session
+          const { signInAnonymously } = await import('./src/js/auth.js');
+          const { error } = await signInAnonymously();
+          if (!error) {
+            console.log('Anonymous session refreshed – showing dashboard');
+            document.documentElement.classList.add('onboarded');
+          } else {
+            // Could not get a session — send back to onboarding
+            console.warn('Anonymous session refresh failed, clearing guest flag.', error);
+            localStorage.removeItem('auralis-guest');
+            document.documentElement.classList.remove('onboarded');
+          }
         } else {
           console.log('No session – showing onboarding/auth');
           document.documentElement.classList.remove('onboarded');
@@ -38,7 +51,6 @@
         console.warn('Auth gate error:', e);
         document.documentElement.classList.remove('onboarded');
       } finally {
-        // Reveal the page now that we know the right state
         document.documentElement.classList.add('auth-ready');
       }
     }
