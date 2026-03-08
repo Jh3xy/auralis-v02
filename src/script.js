@@ -5,6 +5,7 @@ import './styles/variables.css'
 import './styles/resets.css'
 import './styles.css'
 import './styles/utils.css'
+import './styles/states.css'
 import './styles/onboarding.css'
 import './styles/transcripts.css'
 import './styles/queries.css'
@@ -488,7 +489,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const displayName = supabaseUser.user_metadata?.display_name || supabaseUser.email || '';
     createInitials(displayName);
     const usernameEl = document.getElementById('username');
-    if (usernameEl) usernameEl.innerText = displayName;
+    if (usernameEl && displayName.trim()) usernameEl.innerText = displayName.trim();
     console.log('User restored from Supabase session:', displayName);
   }
 
@@ -637,7 +638,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Function to set UI states
 function updateState(element, state) {
-  const states = ['empty', 'loading', 'loaded'];
+  const states = ['empty', 'loading', 'loaded', 'guest', 'user'];
   element.classList.remove(...states)
   element.classList.add(state)
 }
@@ -1776,6 +1777,8 @@ exportBTN.addEventListener('click', async () => {
   }
 
   await downloadFile(editableTranscript, session.title || 'transcript', downloadType);
+
+  showToast('File Download started', 'success')
 });
 
 // Cancel Modal logic 
@@ -1926,10 +1929,11 @@ uploadBtnSecondary.addEventListener('click', () => {
 
 
 // Empty State - Navigate to Transcription section when footer is clicked
-const emptyFooter = document.querySelector('.empty-footer');
-
+const emptyFooter = document.querySelectorAll('.empty-footer');
+// console.log(emptyFooter)
 if (emptyFooter) {
-  emptyFooter.addEventListener('click', () => {
+  emptyFooter.forEach(footer => {
+  footer.addEventListener('click', () => {
     // Find the Transcription nav link
     const transcriptionNavLink = document.querySelector('[data-id="transcription"]');
 
@@ -1940,6 +1944,7 @@ if (emptyFooter) {
       // console.log('Navigated to Transcription section from empty state');
     }
   });
+  })
 }
 
 
