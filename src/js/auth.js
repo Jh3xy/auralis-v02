@@ -97,3 +97,8 @@ export async function getUser() {
   const { data } = await supabase.auth.getUser();
   return data?.user ?? null;
 }
+
+export async function updatePassword(newPassword) {
+  const { data, error } = await supabase.auth.updateUser({ password: newPassword });
+  return { data, error };
+}

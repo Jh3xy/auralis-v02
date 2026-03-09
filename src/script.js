@@ -17,7 +17,7 @@ import { uploadAndTranscribe, validateTranscriptQuality } from "./js/transcribe.
 import { saveAudioBlob, getAudioBlob, clearAudioBlob } from './js/audioDB.js';
 import { downloadFile } from './js/exporter.js';
 import { eventHub } from "./js/eventhub.js";
-import { getUser, getSession, signOut, signInAnonymously } from './js/auth.js';
+import { getUser, getSession, signOut, signInAnonymously, supabase, updatePassword } from './js/auth.js';
 
 
 const TRANSCRIPT_KEY = 'auralis-transcript'
@@ -120,6 +120,27 @@ authTabs.forEach(tab => {
     document.getElementById(`auth-panel-${targetSection}`).classList.remove('hidden');
   });
 });
+
+function showPasswordRecoveryPanel() {
+  document.documentElement.classList.remove('onboarded');
+  goToStep(4);
+  document.querySelectorAll('.auth-tab').forEach((t) => t.classList.remove('active'));
+  document.querySelectorAll('.auth-panel').forEach((p) => p.classList.add('hidden'));
+  const recoveryPanel = document.getElementById('set-new-password-panel');
+  if (recoveryPanel) recoveryPanel.classList.remove('hidden');
+  const recoveryErr = document.getElementById('set-new-password-err');
+  if (recoveryErr) {
+    recoveryErr.innerText = '';
+    recoveryErr.style.display = 'none';
+  }
+}
+
+function validatePasswordResetInputs(newPassword, confirmPassword) {
+  if (!newPassword || !confirmPassword) return 'Please fill in all fields.';
+  if (newPassword !== confirmPassword) return 'Passwords do not match.';
+  if (newPassword.length < 8) return 'Password must be at least 8 characters.';
+  return null;
+}
 
 // ─── Sign Up ─────────────────────────────────────────────────────────────────
 const signUpBtn = document.getElementById('signup-btn');
@@ -250,6 +271,46 @@ if (forgotBtn) {
   });
 }
 
+const setNewPasswordBtn = document.getElementById('set-new-password-btn');
+if (setNewPasswordBtn) {
+  setNewPasswordBtn.addEventListener('click', async () => {
+    const newPassword = document.getElementById('new-password-input')?.value || '';
+    const confirmPassword = document.getElementById('confirm-password-input')?.value || '';
+    const errEl = document.getElementById('set-new-password-err');
+    if (!errEl) return;
+
+    const validationError = validatePasswordResetInputs(newPassword, confirmPassword);
+    if (validationError) {
+      errEl.style.display = 'block';
+      errEl.innerText = validationError;
+      return;
+    }
+
+    errEl.style.display = 'none';
+    setNewPasswordBtn.disabled = true;
+    setNewPasswordBtn.innerText = 'Updating...';
+
+    const { error } = await updatePassword(newPassword);
+
+    setNewPasswordBtn.disabled = false;
+    setNewPasswordBtn.innerText = 'Set New Password';
+
+    if (error) {
+      errEl.style.display = 'block';
+      errEl.innerText = error.message || 'Failed to update password.';
+      return;
+    }
+
+    window.location.hash = '';
+    errEl.style.display = 'block';
+    errEl.innerText = 'Password updated. Please sign in.';
+    setTimeout(async () => {
+      await supabase.auth.signOut();
+      location.reload();
+    }, 2000);
+  });
+}
+
 const dashboardBtn = document.getElementById('dashboard-link')
 
 function transitionToDashboard() {
@@ -264,13 +325,18 @@ function transitionToDashboard() {
 
 if (dashboardBtn) {
   dashboardBtn.addEventListener("click", async () => {
+    // Lock Login/Sign Up button
+    const signInBtn = document.getElementById('onboarding-upload-audio-btn');
+    signInBtn.disabled = true;
+    
     const supabaseUser = await getUser();
     const isRegisteredSession = Boolean(supabaseUser) && supabaseUser.is_anonymous !== true;
-
+    
     if (isRegisteredSession) {
       localStorage.removeItem('auralis-guest');
       applySectionUserStates(supabaseUser);
       transitionToDashboard();
+      signInBtn.disabled = false;
       return;
     }
 
@@ -572,6 +638,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.documentElement.classList.remove('onboarded');
       location.reload();
     });
+  }
+
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      showPasswordRecoveryPanel();
+    }
+  });
+
+  const hashParams = new URLSearchParams(window.location.hash.replace('#', '?'));
+  if (hashParams.get('type') === 'recovery') {
+    showPasswordRecoveryPanel();
   }
 
 

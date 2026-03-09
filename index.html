@@ -27,7 +27,12 @@
         const session = await getSession();
         const isGuest = localStorage.getItem('auralis-guest') === 'true';
 
-        if (session) {
+        const hashParams = new URLSearchParams(window.location.hash.replace('#', '?'));
+        const isRecovery = hashParams.get('type') === 'recovery';
+
+        if (isRecovery) {
+          document.documentElement.classList.remove('onboarded');
+        } else if (session) {
           console.log('Active Supabase session – showing dashboard');
           document.documentElement.classList.add('onboarded');
         } else if (isGuest) {
@@ -298,6 +303,21 @@
                   </div>
                   <span class="err-msg" id="forgot-err"></span>
                   <button id="forgot-btn" class="cta-main">Send Mail</button>
+                </div>
+
+                <div class="auth-panel hidden" id="set-new-password-panel">
+                  <h1>Set New Password</h1>
+                  <p class="cta-desc sub-text">Create a new password to continue.</p>
+                  <div class="input-group">
+                    <label for="new-password-input">New Password</label>
+                    <input type="password" id="new-password-input" placeholder="New password" class="name-input" autocomplete="new-password" />
+                  </div>
+                  <div class="input-group">
+                    <label for="confirm-password-input">Confirm Password</label>
+                    <input type="password" id="confirm-password-input" placeholder="Confirm new password" class="name-input" autocomplete="new-password" />
+                  </div>
+                  <span class="err-msg" id="set-new-password-err"></span>
+                  <button id="set-new-password-btn" class="cta-main">Set New Password</button>
                 </div>
 
                 
