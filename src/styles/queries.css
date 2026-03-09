@@ -5,6 +5,7 @@
   
   
   /* Onboarding Media Queries */
+  .step-two,
   .step-three{
     grid-template-columns: 1fr 1fr;
     align-items: center;

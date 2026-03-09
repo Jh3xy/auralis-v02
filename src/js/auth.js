@@ -29,6 +29,7 @@ export async function signUp(email, password, displayName) {
     email,
     password,
     options: {
+      emailRedirectTo: window.location.origin,
       data: { display_name: displayName }
     }
   });
@@ -50,11 +51,33 @@ export async function signIn(email, password) {
 }
 
 /**
+ * Send password reset email to a user.
+ * @param {string} email
+ * @returns {{ data, error }}
+ */
+export async function resetPasswordForEmail(email) {
+  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin
+  });
+  return { data, error };
+}
+
+/**
  * Sign out the current user.
  */
 export async function signOut() {
   const { error } = await supabase.auth.signOut();
   return { error };
+}
+
+/**
+ * Sign in as an anonymous (guest) user.
+ * Returns a real Supabase session with no email or password.
+ * @returns {{ data, error }}
+ */
+export async function signInAnonymously() {
+  const { data, error } = await supabase.auth.signInAnonymously();
+  return { data, error };
 }
 
 /**

@@ -25,9 +25,24 @@
     async function initAuthGate() {
       try {
         const session = await getSession();
+        const isGuest = localStorage.getItem('auralis-guest') === 'true';
+
         if (session) {
           console.log('Active Supabase session – showing dashboard');
           document.documentElement.classList.add('onboarded');
+        } else if (isGuest) {
+          // Guest flag exists but session is gone — re-create the anonymous session
+          const { signInAnonymously } = await import('./src/js/auth.js');
+          const { error } = await signInAnonymously();
+          if (!error) {
+            console.log('Anonymous session refreshed – showing dashboard');
+            document.documentElement.classList.add('onboarded');
+          } else {
+            // Could not get a session — send back to onboarding
+            console.warn('Anonymous session refresh failed, clearing guest flag.', error);
+            localStorage.removeItem('auralis-guest');
+            document.documentElement.classList.remove('onboarded');
+          }
         } else {
           console.log('No session – showing onboarding/auth');
           document.documentElement.classList.remove('onboarded');
@@ -36,7 +51,6 @@
         console.warn('Auth gate error:', e);
         document.documentElement.classList.remove('onboarded');
       } finally {
-        // Reveal the page now that we know the right state
         document.documentElement.classList.add('auth-ready');
       }
     }
@@ -99,55 +113,7 @@
               <button class="cta-main" onclick="goToStep(2)">Let's get started</button>
               <p class="steps">Initial Setup • Step 1 of 4</p>
             </div>
-
             <div class="slider-step step-two">
-              <div class="text-block">
-                <!-- Auth tabs -->
-                <div class="auth-tabs flex gap-2" id="auth-tabs">
-                  <button class="auth-tab active" data-tab="signup">Sign Up</button>
-                  <button class="auth-tab" data-tab="login">Log In</button>
-                </div>
-
-                <!-- Sign Up Panel -->
-                <div class="auth-panel" id="auth-panel-signup">
-                  <h1>Create your account</h1>
-                  <p class="cta-desc">Enter your details to get started with Auralis.</p>
-                  <div class="input-group">
-                    <label for="signup-name-input">Display Name</label>
-                    <input type="text" id="signup-name-input" placeholder="e.g. John Doe" class="name-input" autocomplete="name" />
-                  </div>
-                  <div class="input-group">
-                    <label for="signup-email-input">Email</label>
-                    <input type="email" id="signup-email-input" placeholder="you@example.com" class="name-input" autocomplete="email" />
-                  </div>
-                  <div class="input-group">
-                    <label for="signup-password-input">Password</label>
-                    <input type="password" id="signup-password-input" placeholder="Min. 6 characters" class="name-input" autocomplete="new-password" />
-                  </div>
-                  <span class="err-msg" id="signup-err"></span>
-                  <button id="signup-btn" class="cta-main">Create Account</button>
-                </div>
-
-                <!-- Log In Panel -->
-                <div class="auth-panel hidden" id="auth-panel-login">
-                  <h1>Welcome back</h1>
-                  <p class="cta-desc">Log in to continue to your Auralis workspace.</p>
-                  <div class="input-group">
-                    <label for="login-email-input">Email</label>
-                    <input type="email" id="login-email-input" placeholder="you@example.com" class="name-input" autocomplete="email" />
-                  </div>
-                  <div class="input-group">
-                    <label for="login-password-input">Password</label>
-                    <input type="password" id="login-password-input" placeholder="Your password" class="name-input" autocomplete="current-password" />
-                  </div>
-                  <span class="err-msg" id="login-err"></span>
-                  <button id="login-btn" class="cta-main">Log In</button>
-                </div>
-
-                <p class="steps">Initial Setup • Step 2 of 4</p>
-              </div>
-            </div>
-            <div class="slider-step step-three">
               <div class="editor-card">
                 <div class="editor-header">
                   <div class="editor-header-info">
@@ -227,63 +193,114 @@
                 </div>
               </div>
               <div class="text-box">
-                <p class="box-tag">Step 3 of 4</p>
+                <p class="box-tag">Step 2 of 4</p>
                 <h1 class="text-box-heading">Transcription that feels like <span class="highlight">magic.</span></h1>
                 <p class="box-desc">
                   Real-time multi-speaker identification and interactive transcripts that follow the rhythm of your voice.
                 </p>
                 <div class="cta-btns">
-                  <button class="cta-main cta-alt" onclick="goToStep(2)">Back</button>
-                  <button class="cta-main" onclick="goToStep(4)">Next</button>
+                  <button class="cta-main cta-alt" onclick="goToStep(1)">Back</button>
+                  <button class="cta-main" onclick="goToStep(3)">Next</button>
                 </div>
                 <div class="features-tag">
                   <div class="feature">
                     <span>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="check-icon">
-                        <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2ZM16.7071 9.29289C17.0976 9.68342 17.0976 10.3166 16.7071 10.7071L11.7071 15.7071C11.3166 16.0976 10.6834 16.0976 10.2929 15.7071L7.29289 12.7071C6.90237 12.3166 6.90237 11.6834 7.29289 11.2929C7.68342 10.9024 8.31658 10.9024 8.70711 11.2929L11 13.5858L15.2929 9.29289C15.6834 8.90237 16.3166 8.90237 16.7071 9.29289Z" fill="currentColor"/>
-                      </svg></span>
+                      <i data-lucide="badge-check"></i>
+                    </span>
                     <p>Multi-speaker diarization</p>
                   </div>
                   <div class="feature">
                     <span>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="check-icon">
-                        <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2ZM16.7071 9.29289C17.0976 9.68342 17.0976 10.3166 16.7071 10.7071L11.7071 15.7071C11.3166 16.0976 10.6834 16.0976 10.2929 15.7071L7.29289 12.7071C6.90237 12.3166 6.90237 11.6834 7.29289 11.2929C7.68342 10.9024 8.31658 10.9024 8.70711 11.2929L11 13.5858L15.2929 9.29289C15.6834 8.90237 16.3166 8.90237 16.7071 9.29289Z" fill="currentColor"/>
-                      </svg></span>
+                      <i data-lucide="badge-check"></i>
+                    </span>
                     <p>Auto-punctuation</p>
                   </div>
                   <div class="feature">
                     <span>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="check-icon">
-                        <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2ZM16.7071 9.29289C17.0976 9.68342 17.0976 10.3166 16.7071 10.7071L11.7071 15.7071C11.3166 16.0976 10.6834 16.0976 10.2929 15.7071L7.29289 12.7071C6.90237 12.3166 6.90237 11.6834 7.29289 11.2929C7.68342 10.9024 8.31658 10.9024 8.70711 11.2929L11 13.5858L15.2929 9.29289C15.6834 8.90237 16.3166 8.90237 16.7071 9.29289Z" fill="currentColor"/>
-                      </svg></span>
+                      <i data-lucide="badge-check"></i>
+                    </span>
                     <p>Export to 12+ formats</p>
                   </div>
                   <div class="feature">
                     <span>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="check-icon">
-                        <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2ZM16.7071 9.29289C17.0976 9.68342 17.0976 10.3166 16.7071 10.7071L11.7071 15.7071C11.3166 16.0976 10.6834 16.0976 10.2929 15.7071L7.29289 12.7071C6.90237 12.3166 6.90237 11.6834 7.29289 11.2929C7.68342 10.9024 8.31658 10.9024 8.70711 11.2929L11 13.5858L15.2929 9.29289C15.6834 8.90237 16.3166 8.90237 16.7071 9.29289Z" fill="currentColor"/>
-                      </svg></span>
+                      <i data-lucide="badge-check"></i>
+                    </span>
                     <p>Live synchronization</p>
                   </div>
                 </div>
               </div>
             </div> 
-            <div class="slider-step slider-four">
+            <div class="slider-step slider-three">
               <div class="text-block">
                 <h1>Ready to Listen?</h1>
-                <p class="cta-desc">
-                  Upload your first sermon or meeting recording to begin.
+                <p class="cta-desc sub-text">
+                  Skip to Dashboard to upload your first sermon, or log in for full access.
                 </p>
-                <button class="cta-main" id="onboarding-upload-audio-btn">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="upload-icon">
-                    <path d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.89 22 5.99 22H18C19.1 22 20 21.1 20 20V8L14 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M14 2V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M12 18L12 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M9 14L12 11L15 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  Upload Audio
+                <button class="cta-main" id="onboarding-upload-audio-btn" onclick="goToStep(4)">
+                  <i data-lucide="user-round-key"></i>
+                  Login / Sign up
                 </button>
                 <button class="cta-secondary" id="dashboard-link">Skip to Dashboard</button>
+              </div>
+            </div>
+            <div class="slider-step step-four">
+              <div class="text-block">
+                <!-- Auth tabs -->
+                <div class="auth-tabs flex gap-2" id="auth-tabs">
+                  <button class="auth-tab active" data-tab="signup">Sign Up</button>
+                  <button class="auth-tab" data-tab="login">Log In</button>
+                  <button class="auth-tab" data-tab="forgotten-password">Forgot Password</button>
+                </div>
+
+                <!-- Sign Up Panel -->
+                <div class="auth-panel" id="auth-panel-signup">
+                  <h1>Create your account</h1>
+                  <p class="cta-desc sub-text">Enter your details to access the full features of Auralis.</p>
+                  <div class="input-group">
+                    <label for="signup-name-input">Display Name</label>
+                    <input type="text" id="signup-name-input" placeholder="e.g. John Doe" class="name-input" autocomplete="name" />
+                  </div>
+                  <div class="input-group">
+                    <label for="signup-email-input">Email</label>
+                    <input type="email" id="signup-email-input" placeholder="you@example.com" class="name-input" autocomplete="email" />
+                  </div>
+                  <div class="input-group">
+                    <label for="signup-password-input">Password</label>
+                    <input type="password" id="signup-password-input" placeholder="Min. 6 characters" class="name-input" autocomplete="new-password" />
+                  </div>
+                  <span class="err-msg" id="signup-err"></span>
+                  <button id="signup-btn" class="cta-main">Create Account</button>
+                </div>
+
+                <!-- Log In Panel -->
+                <div class="auth-panel hidden" id="auth-panel-login">
+                  <h1>Welcome back</h1>
+                  <p class="cta-desc sub-text">Log in to access the full features of Auralis.</p>
+                  <div class="input-group">
+                    <label for="login-email-input">Email</label>
+                    <input type="email" id="login-email-input" placeholder="you@example.com" class="name-input" autocomplete="email" />
+                  </div>
+                  <div class="input-group">
+                    <label for="login-password-input">Password</label>
+                    <input type="password" id="login-password-input" placeholder="Your password" class="name-input" autocomplete="current-password" />
+                  </div>
+                  <span class="err-msg" id="login-err"></span>
+                  <button id="login-btn" class="cta-main">Log In</button>
+                </div>
+
+                <!-- Forgot Password Panel -->
+                <div class="auth-panel hidden" id="auth-panel-forgotten-password">
+                  <h1>Recover Password</h1>
+                  <p class="cta-desc sub-text">Enter email to recover password</p>
+                  <div class="input-group">
+                    <label for="login-email-input">Email</label>
+                    <input type="email" id="forgotten-password-input" placeholder="you@example.com" class="name-input" autocomplete="email" />
+                  </div>
+                  <span class="err-msg" id="forgot-err"></span>
+                  <button id="forgot-btn" class="cta-main">Send Mail</button>
+                </div>
+
+                
               </div>
             </div>
         </div>
@@ -452,9 +469,11 @@
             </ul>
           </nav>
           <div class="user flex items-center gap-2">
-            <div class="pfp uppercase flex-center" id="sidebar-pfp"> • </div>
+            <div class="pfp uppercase flex-center" id="sidebar-pfp"> 
+              <i data-lucide="circle-user"></i>
+            </div>
             <div class="user-detail">
-              <p class="username" id="username">--</p>
+              <p class="username" id="username">Guest</p>
               <div class="plan uppercase"></div>
             </div>
             <button id="sign-out-btn" class="sign-out-btn" title="Sign out">
@@ -618,99 +637,123 @@
                 New Upload
               </button>
             </div>
-            <div class="grid-table">
-              <h2>Past Transcriptions</h2>
-              <div class="grid-table-header grid">
-                <div class="title col-span-6">Audio Title</div>
-                <div class="status col-span-2">Status</div>
-                <div class="date col-span-2">Date</div>
-                <div class="duration col-span-2 place-end">Duration</div>
+            <div class="state-wrap flex-center">
+              <div class="guest-cta flex flex-col items-center">
+                <i data-lucide="file-lock"></i>
+                <h2>Your Transcription History</h2>
+                <p class="sub-text">Sign in to access your past transcriptions. <br> Guest sessions do not save your work.</p>
+                <div class="guest-cta-btns flex flex-col gap-3">
+                  <button class="guest-sign-in">Sign In</button>
+                  <button class="guest-login">Create Account</button>
+                </div>
               </div>
-              <div class="grid-table-content grid">
-                <div class="title col-span-6 flex flex-col">
-                  <span class="audio-title">The Architecture of Silence</span>
-                  <span class="audio-title-desc">Main Sanctuary • 2 Speakers</span>
+              <div class="empty-state new-user-state flex flex-col items-center">
+                <i data-lucide="file-search-corner"></i>
+                <h2>No Transcriptions Yet</h2>
+                <p class="empty-desc">
+                  Your completed transcriptions will appear here. Head to Transcribe to upload your first recording.
+                </p>
+                <div class="flex items-center gap-2 empty-footer">
+                  <i data-lucide="arrow-left"></i>
+                  <span>Go to Transcription</span>
                 </div>
-                <div class="status col-span-2">
-                  <span class="flex items-center gap-1">
-                    <span class="status-dot completed"></span>
-                    Completed
-                  </span>
-                </div>
-                <div class="date col-span-2">Oct 24, 2023</div>
-                <div class="duration col-span-2 place-end">42:15</div>
               </div>
-              <div class="grid-table-content grid">
-                <div class="title col-span-6 flex flex-col">
-                  <span class="audio-title">Acoustic Engineering in Modern Atriums</span>
-                  <span class="audio-title-desc">North Wing • 1 Speaker</span>
+              <div class="grid-table">
+                <h2>Past Transcriptions</h2>
+                <div class="grid-table-header grid">
+                  <div class="title col-span-6">Audio Title</div>
+                  <div class="status col-span-2">Status</div>
+                  <div class="date col-span-2">Date</div>
+                  <div class="duration col-span-2 place-end">Duration</div>
                 </div>
-                <div class="status col-span-2">
-                  <span class="flex items-center gap-1">
-                    <span class="status-dot draft"></span>
-                    Draft
-                  </span>
+                <div class="grid-table-content grid">
+                  <div class="title col-span-6 flex flex-col">
+                    <span class="audio-title">-------</span>
+                    <span class="audio-title-desc">-- • --</span>
+                  </div>
+                  <div class="status col-span-2">
+                    <span class="flex items-center gap-1">
+                      <span class="status-dot completed"></span>
+                      --
+                    </span>
+                  </div>
+                  <div class="date col-span-2">-- --, --</div>
+                  <div class="duration col-span-2 place-end">--:--</div>
                 </div>
-                <div class="date col-span-2">Oct 22, 2023</div>
-                <div class="duration col-span-2 place-end">28:40</div>
-              </div>
-              <div class="grid-table-content grid">
-                <div class="title col-span-6 flex flex-col">
-                  <span class="audio-title">Spatial Soundscape Design Pattern</span>
-                  <span class="audio-title-desc">Recording Studio • 3 Speakers</span>
+                <div class="grid-table-content grid">
+                  <div class="title col-span-6 flex flex-col">
+                    <span class="audio-title">-------</span>
+                    <span class="audio-title-desc">-- -- • -- --</span>
+                  </div>
+                  <div class="status col-span-2">
+                    <span class="flex items-center gap-1">
+                      <span class="status-dot draft"></span>
+                      --
+                    </span>
+                  </div>
+                  <div class="date col-span-2">-- --, --</div>
+                  <div class="duration col-span-2 place-end">--:--</div>
                 </div>
-                <div class="status col-span-2">
-                  <span class="flex items-center gap-1">
-                    <span class="status-dot completed"></span>
-                    Completed
-                  </span>
+                <div class="grid-table-content grid">
+                  <div class="title col-span-6 flex flex-col">
+                    <span class="audio-title">-------</span>
+                    <span class="audio-title-desc">-- -- • -- --</span>
+                  </div>
+                  <div class="status col-span-2">
+                    <span class="flex items-center gap-1">
+                      <span class="status-dot completed"></span>
+                      --
+                    </span>
+                  </div>
+                  <div class="date col-span-2">-- --, --</div>
+                  <div class="duration col-span-2 place-end">--:--</div>
                 </div>
-                <div class="date col-span-2">Oct 20, 2023</div>
-                <div class="duration col-span-2 place-end">56:12</div>
-              </div>
-              <div class="grid-table-content grid">
-                <div class="title col-span-6 flex flex-col">
-                  <span class="audio-title">Timber Slats and Reverb Control</span>
-                  <span class="audio-title-desc">Conference Hall • 2 Speakers</span>
+                <div class="grid-table-content grid">
+                  <div class="title col-span-6 flex flex-col">
+                    <span class="audio-title">-------</span>
+                    <span class="audio-title-desc">-- -- • -- --</span>
+                  </div>
+                  <div class="status col-span-2">
+                    <span class="flex items-center gap-1">
+                      <span class="status-dot completed"></span>
+                      --
+                    </span>
+                  </div>
+                  <div class="date col-span-2">-- --, --</div>
+                  <div class="duration col-span-2 place-end">--:--</div>
                 </div>
-                <div class="status col-span-2">
-                  <span class="flex items-center gap-1">
-                    <span class="status-dot completed"></span>
-                    Completed
-                  </span>
+                <div class="grid-table-content grid">
+                  <div class="title col-span-6 flex flex-col">
+                    <span class="audio-title">-------</span>
+                    <span class="audio-title-desc">----- -- • -- --</span>
+                  </div>
+                  <div class="status col-span-2">
+                    <span class="flex items-center gap-1">
+                      <span class="status-dot draft"></span>
+                      --
+                    </span>
+                  </div>
+                  <div class="date col-span-2">-- --, --</div>
+                  <div class="duration col-span-2 place-end">--:--:--</div>
                 </div>
-                <div class="date col-span-2">Oct 18, 2023</div>
-                <div class="duration col-span-2 place-end">15:04</div>
-              </div>
-              <div class="grid-table-content grid">
-                <div class="title col-span-6 flex flex-col">
-                  <span class="audio-title">Ambient Mic Placement Strategy</span>
-                  <span class="audio-title-desc">On-site Recording • 1 Speaker</span>
+                <div class="grid-table-content grid">
+                  <div class="title col-span-6 flex flex-col">
+                    <span class="audio-title">-------</span>
+                    <span class="audio-title-desc">-- -- • -- --</span>
+                  </div>
+                  <div class="status col-span-2">
+                    <span class="flex items-center gap-1">
+                      <span class="status-dot completed"></span>
+                      --
+                    </span>
+                  </div>
+                  <div class="date col-span-2">-- --, --</div>
+                  <div class="duration col-span-2 place-end">--:--</div>
                 </div>
-                <div class="status col-span-2">
-                  <span class="flex items-center gap-1">
-                    <span class="status-dot draft"></span>
-                    Draft
-                  </span>
-                </div>
-                <div class="date col-span-2">Oct 15, 2023</div>
-                <div class="duration col-span-2 place-end">1:04:22</div>
-              </div>
-              <div class="grid-table-content grid">
-                <div class="title col-span-6 flex flex-col">
-                  <span class="audio-title">Glass Facades and North Wing Flutter Echo</span>
-                  <span class="audio-title-desc">Main Sanctuary • 2 Speakers</span>
-                </div>
-                <div class="status col-span-2">
-                  <span class="flex items-center gap-1">
-                    <span class="status-dot completed"></span>
-                    Completed
-                  </span>
-                </div>
-                <div class="date col-span-2">Oct 12, 2023</div>
-                <div class="duration col-span-2 place-end">32:45</div>
               </div>
             </div>
+            
+            
           </div>
         </section>
         <section id="templates" class="section flex-center templates">
@@ -733,7 +776,7 @@
         </section>
         <section id="analytics" class="section analytics">
           <div class="wrap">
-            <div class="flex flex-col gap-10">
+            <div class="flex flex-col gap-10 analytics-metric">
               <div class="card flex flex-col gap-6">
                 <div class="flex items-center justify-between">
                   <div class="flex flex-col">
@@ -755,20 +798,20 @@
                 <div class="card flex flex-col">
                   <p class="card-title sub-text">Total Projects</p>
                   <div class="flex items-baseline gap-2">
-                    <span id="total-projects" class="main-text">12</span>
+                    <span id="total-projects" class="main-text">--</span>
                     <span class="sub-text">Saved</span>
                   </div>
                 </div>
                 <div class="card flex flex-col">
                   <p class="card-title sub-text">Total Characters</p>
                   <div class="flex items-baseline gap-2">
-                    <span id="total-chars" class="main-text">85,000</span>
+                    <span id="total-chars" class="main-text">---</span>
                   </div>
                 </div>
                 <div class="card flex flex-col">
                   <p class="card-title sub-text">Average Duration</p>
                   <div class="flex items-baseline gap-2">
-                    <span id="avg-duration" class="main-text">14:20</span>
+                    <span id="avg-duration" class="main-text">--:--</span>
                     <span class="sub-text">mins</span>
                   </div>
                 </div>
@@ -777,16 +820,16 @@
                 <div class="card flex justify-between items-start">
                   <div class="flex flex-col">
                     <p class="card-title sub-text">Oldest Project</p>
-                    <h3>Urban Soundscape Vol. I</h3>
+                    <h3>--</h3>
                   </div>
-                  <span class="sub-text-alt">Oct 12, 2023</span>
+                  <span class="sub-text-alt">--- --, --</span>
                 </div>
                 <div class="card flex justify-between items-start">
                   <div class="flex flex-col">
                     <p class="card-title sub-text">Newest Project</p>
-                    <h3>Minimalist Echo Study</h3>
+                    <h3>--</h3>
                   </div>
-                  <span class="sub-text-alt">Just now</span>
+                  <span class="sub-text-alt">-- --</span>
                 </div>
               </div>
               <div class="activity-section">
@@ -799,41 +842,63 @@
                     <div class="col-span-2 sub-text status place-content-end">Status</div>
                   </div>
                   <div class="table-content grid">
-                    <div class="col-span-6 file-name">atrium_reverb_test.wav</div>
-                    <div class="col-span-2 duration">04:12</div>
-                    <div class="col-span-2 date">Nov 24, 2023</div>
+                    <div class="col-span-6 file-name">--</div>
+                    <div class="col-span-2 duration">--:--</div>
+                    <div class="col-span-2 date">-- --, --</div>
                     <div class="col-span-2 status completed items-center flex gap-1">
                       <span class="indicator"></span>
-                      Completed
+                      --
                     </div>
                   </div>
                   <div class="table-content grid">
-                    <div class="col-span-6 file-name">concrete_echo_01.mp3</div>
-                    <div class="col-span-2 duration">12:45</div>
-                    <div class="col-span-2 date">Nov 22, 2023</div>
+                    <div class="col-span-6 file-name">--</div>
+                    <div class="col-span-2 duration">--:--</div>
+                    <div class="col-span-2 date">-- --, --</div>
                     <div class="col-span-2 status completed items-center flex gap-1">
                       <span class="indicator"></span>
-                      Completed
+                      --
                     </div>
                   </div>
                   <div class="table-content grid">
-                    <div class="col-span-6 file-name">exterior_ambience_draft.wav</div>
-                    <div class="col-span-2 duration">08:20</div>
-                    <div class="col-span-2 date">Nov 21, 2023</div>
+                    <div class="col-span-6 file-name">--</div>
+                    <div class="col-span-2 duration">--:--</div>
+                    <div class="col-span-2 date">-- --, --</div>
                     <div class="col-span-2 status failed items-center flex gap-1">
                       <span class="indicator"></span>
-                      Failed
+                      --
                     </div>
                   </div>
                   <div class="table-content grid">
-                    <div class="col-span-6 file-name">stairwell_impulse_response.flac</div>
-                    <div class="col-span-2 duration">02:10</div>
-                    <div class="col-span-2 date">Nov 18, 2023</div>
+                    <div class="col-span-6 file-name">--</div>
+                    <div class="col-span-2 duration">--:--</div>
+                    <div class="col-span-2 date">-- --, --</div>
                     <div class="col-span-2 status completed items-center flex gap-1">
                       <span class="indicator"></span>
-                      Completed
+                      --
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+            <div class="state-wrap flex-center">
+              <div class="guest-cta flex flex-col items-center">
+                <i data-lucide="file-lock"></i>
+                <h2>Usage Analytics</h2>
+                <p class="sub-text">Sign in to view your transcription analytics and usage data.</p>
+                <div class="guest-cta-btns flex flex-col gap-3">
+                  <button class="guest-sign-in">Sign In</button>
+                  <button class="guest-login">Create Account</button>
+                </div>
+              </div>
+              <div class="empty-state new-user-state flex flex-col items-center">
+                <i data-lucide="file-search-corner"></i>
+                <h2>No Activity Yet.</h2>
+                <p class="empty-desc">
+                  Upload your first recording to get started.
+                </p>
+                <div class="flex items-center gap-2 empty-footer">
+                  <i data-lucide="arrow-left"></i>
+                  <span>Go to Transcription</span>
                 </div>
               </div>
             </div>

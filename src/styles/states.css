@@ -1,0 +1,372 @@
+
+/* All application States are managed here */
+
+.loading-dock.show-url-box .upload-btn {
+  display: none;
+}
+ /* Hide URL box by default */
+.loading-dock .url-box {
+  display: none;
+}
+/* Show URL box when toggled */
+.loading-dock.show-url-box .url-box {
+  display: block;
+}
+.url-btn.url-toggle .default {
+  display: none;
+}
+.url-btn.url-toggle .url-text {
+  display: block;
+}
+.url-btn .url-text {
+  display: none;
+}
+.url-btn .default {
+  display: block;
+}
+
+.url-upload-btn.disabled,
+.url-upload-btn:disabled, /* Targets the actual attribute */
+label[for="audio-input"].disabled {
+  cursor: not-allowed;
+  opacity: 0.2;        
+  pointer-events: none;  
+  filter: grayscale(1); 
+}
+.url-upload-btn.is-disabled,
+.url-upload-btn:is-disabled, /* Targets the actual attribute */
+label[for="audio-input"].is-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+  user-select: none;  
+  filter: saturate(0.5) brightness(0.8);
+}
+
+
+/* Projects Section - Empty state */
+.section.projects .empty-state{
+  display: flex;
+}
+.section.projects .loading-state{
+  display: none;
+}
+.section.projects .transcript-state{
+  display: none;
+}
+
+/* Project section - Loading State */
+.section.projects.loading .empty-state{
+  display: none;
+}
+.section.projects.loading .transcript-state{
+  display: none;
+}
+.section.projects.loading .loading-state{
+  display: block;
+}
+
+/* Projects Section - Loaded State */
+.section.projects.loaded .transcript-state{
+  display: block;
+}
+.section.projects.loaded .empty-state{
+  display: none;
+}
+.section.projects.loaded .loading-state{
+  display: none;
+}
+
+/* ============================================
+   TOAST NOTIFICATION STYLES
+   ============================================ */
+
+/* Toast Container */
+.toast-container {
+  position: fixed;
+  top: var(--space-lg);
+  right: var(--space-md);
+  z-index: var(--z-tooltip);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  pointer-events: none;
+  max-width: 400px;
+  width: 100%;
+}
+
+/* Individual Toast */
+.toast {
+  width: 70%;
+  max-width: 400px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  pointer-events: auto;
+  top: 45px;
+  right: 1rem;
+  position: absolute;
+  font-size: var(--fs-xs);
+  color: var(--text-main);
+  box-shadow: var(--shadow-lg);
+  font-weight: var(--fw-medium);
+  background-color: var(--text-inverse);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  padding: .75rem 1rem;
+  animation: slideIn 0.3s var(--ease-out) forwards;
+  transition: all var(--duration-normal) var(--ease-standard);
+}
+.toast-cta{
+  align-self: flex-start;
+  display: block;
+  margin-top: 10px;
+  text-decoration: underline;
+}
+
+.toast .icon{
+  flex-shrink: 0;
+  border-radius: 50%;
+  width: 1.25rem;
+  height: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Toast Icon (if you want to add icons later) */
+.toast-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toast [data-ludice] {
+  border: none;
+}
+
+/* Toast removing animation */
+.toast.removing {
+  animation: slideOut 0.3s var(--ease-in) forwards;
+}
+
+/* Toast Types */
+.toast.success .icon {
+  background-color: rgb(from var(--color-success-bg) r g b / 0.3);
+}
+.toast.success .icon [data-ludice] {
+  color: var(--color-success);
+}
+.toast.error .icon {
+  background-color: rgb(from var(--color-error-bg) r g b / 0.7);
+}
+.toast.error .icon [data-ludice] {
+  color: var(--color-error);
+}
+.toast.warning .icon {
+  background-color: rgb(from var(--color-warning-bg) r g b / 0.7);
+}
+.toast.warning .icon [data-ludice] {
+  color: var(--color-warning);
+}
+.toast.info .icon {
+  background-color: rgba(224, 242, 254, 0.3);
+}
+.toast.info .icon [data-ludice] {
+  color: rgba(224, 242, 254, 0.6);
+}
+
+/* Toast Message */
+.toast-message {
+  flex: 1;
+  color: var(--text-main);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* Animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+
+
+
+.audio-player.is-disabled {
+  cursor: not-allowed;
+}
+.audio-player.is-disabled > *:not(.export-btn) {
+  opacity: 0.6;
+  pointer-events: none;
+  user-select: none;  
+  filter: saturate(0.5) brightness(0.8);
+}
+/* 3. Ensure the export button stays fully functional and visible */
+.audio-player.is-disabled .export-btn {
+  cursor: pointer;
+  opacity: 1;
+  filter: none;
+  pointer-events: auto;
+  background-color: var(--text-main);
+  filter: saturate(1) brightness(1);
+}
+.audio-player .disabled-desc {
+  display: none;
+}
+.audio-player.is-disabled .disabled-desc {
+  position: absolute;
+  display: block;
+  font-size: 10px;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  backdrop-filter: blur(12px);
+  background: hsla(240, 20%, 19%, 1);
+  color: var(--text-main);
+}
+
+.state-wrap{
+  min-height: 70dvh;
+}
+
+
+/*  Project & Analytics section states */
+/* ============================================
+   DEFAULT STATE (no class)
+   ============================================ */
+#recordings .grid-table {
+  display: block;
+}
+#analytics .analytics-metric{
+  display: flex;
+}
+
+#analytics .state-wrap,
+#analytics .guest-cta,
+#analytics .new-user-state,
+#recordings .guest-cta,
+#recordings .new-user-state {
+  display: none;
+}
+
+
+/* ============================================
+   GUEST STATE
+   ============================================ */
+#analytics.guest .analytics-metric,
+#recordings.guest .grid-table {
+  display: none;
+}
+
+#analytics.guest .guest-cta,
+#analytics.guest .state-wrap,
+#recordings.guest .guest-cta {
+  display: flex;
+}
+
+#recordings.guest .search-bar {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+#recordings.guest .search-bar > * {
+  pointer-events: none;
+}
+
+
+/* ============================================
+   USER STATE (new/empty user)
+   ============================================ */
+#analytics.user .analytics-metric,
+#analytics.user .guest-cta,
+#recordings.user .grid-table,
+#recordings.user .guest-cta {
+  display: none;
+}
+
+#analytics.user .state-wrap,
+#analytics.user .new-user-state,
+#recordings.user .new-user-state {
+  display: flex;
+}
+
+
+/* ============================================
+   RECORDINGS — user empty state footer styles
+   ============================================ */
+
+.guest-cta{
+  width: 90%;
+  padding: 2.5rem;
+  max-width: 400px;
+  text-align: center;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface);
+}
+.guest-cta [data-lucide] {
+  width: 40px;
+  height: 40px;
+  stroke-width: 3px;
+  margin-bottom: 2rem;
+  color: var(--color-accent-2);
+}
+.guest-cta h2{
+  font-size: var(--fs-lg);
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+.guest-cta .sub-text{
+  margin-bottom: 1.5rem;
+  text-transform: none;
+  line-height: 1.25rem;
+  font-size: 14px;
+}
+.guest-cta .guest-cta-btns{
+  width: 100%;
+}
+#recordings.user  .empty-footer,
+.guest-cta-btns button{
+  letter-spacing: 0.025em;
+  font-weight: 700;
+  line-height: 1.25rem;
+  border-radius: 0.5rem;
+  height: 3rem;
+  cursor: pointer;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  transition: var(--transition-base);
+}
+.guest-cta-btns button:hover{
+  background-color: rgb(255 255 255 / 0.05);
+}
+.guest-cta-btns button:active{
+  transform: scale(.9);
+}
+.guest-cta-btns .guest-sign-in{
+  color: var(--text-inverse);
+  background-color: var(--color-accent-1);
+  border: 1px solid transparent;
+}
+.guest-cta-btns .guest-sign-in:hover{
+  background-color: var(--color-accent-1);
+}

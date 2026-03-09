@@ -5,6 +5,7 @@ import './styles/variables.css'
 import './styles/resets.css'
 import './styles.css'
 import './styles/utils.css'
+import './styles/states.css'
 import './styles/onboarding.css'
 import './styles/transcripts.css'
 import './styles/queries.css'
@@ -16,7 +17,7 @@ import { uploadAndTranscribe, validateTranscriptQuality } from "./js/transcribe.
 import { saveAudioBlob, getAudioBlob, clearAudioBlob } from './js/audioDB.js';
 import { downloadFile } from './js/exporter.js';
 import { eventHub } from "./js/eventhub.js";
-import { getUser, getSession, signOut } from './js/auth.js';
+import { getUser, getSession, signOut, signInAnonymously } from './js/auth.js';
 
 
 const TRANSCRIPT_KEY = 'auralis-transcript'
@@ -48,6 +49,225 @@ let elapsedStartedAt = null;
 let loadingCopyIntervalId = null;
 
 const transcriptAudio = document.getElementById('audio-engine');
+
+
+
+// ─── Onboarding Setup ────────────────────────────────────────────────
+let username;
+const progressBar = document.querySelector('.progress-bars');
+const sliderTrack = document.querySelector('.slider-track');
+
+function goToStep(step) {
+  const storageKey = 'auralis-onboarding';
+  let onboarding = null;
+
+  try {
+    onboarding = JSON.parse(localStorage.getItem(storageKey));
+  } catch (e) {
+    console.warn('auralis-onboarding is invalid JSON, resetting.', e);
+  }
+
+  // If nothing valid is found, create a default object
+  if (!onboarding || typeof onboarding !== 'object') {
+    onboarding = {
+      isCompleted: false,
+      currentStep: 1,
+      time: new Date().toISOString()
+    };
+  }
+
+  // update onboarding current step and Save the new step permanently
+  onboarding.currentStep = step;
+  localStorage.setItem(storageKey, JSON.stringify(onboarding));
+
+  console.log('onboarding:', onboarding);
+
+  // Update elements for sliding effects (guard in case DOM nodes are missing)
+  if (progressBar) progressBar.dataset.step = onboarding.currentStep;
+  if (sliderTrack) sliderTrack.dataset.step = onboarding.currentStep;
+}
+
+
+// expose goToStep function globally so the HTML buttons can access it
+window.goToStep = goToStep
+
+/**
+ * Get the data we saved from index file to restore current step
+ * (savedState is now managed by Supabase auth — kept for goToStep step restoration only)
+ */
+const savedState = JSON.parse(localStorage.getItem('auralis-onboarding'));
+if (savedState && !savedState.isCompleted) {
+  // This calls your function immediately when the script loads
+  goToStep(savedState.currentStep);
+}
+
+// ─── Auth Tab Switching ────────────────────────────────────────────────
+console.log('[auth] Setting up tab switching');
+const authTabs = document.querySelectorAll('.auth-tab');
+authTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    authTabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    // scroll automatically to show the full tab button.
+    tab.scrollIntoView({ 
+      behavior: 'smooth', 
+      inline: 'center', 
+      block: 'nearest' 
+    });
+
+    const targetSection = tab.dataset.tab; // 'signup' / 'login' / 'forgotten-password'
+    document.querySelectorAll('.auth-panel').forEach(panel => panel.classList.add('hidden'));
+    document.getElementById(`auth-panel-${targetSection}`).classList.remove('hidden');
+  });
+});
+
+// ─── Sign Up ─────────────────────────────────────────────────────────────────
+const signUpBtn = document.getElementById('signup-btn');
+if (signUpBtn) {
+  signUpBtn.addEventListener('click', async () => {
+    const nameVal = document.getElementById('signup-name-input').value.trim();
+    const emailVal = document.getElementById('signup-email-input').value.trim();
+    const passVal = document.getElementById('signup-password-input').value;
+    const errEl = document.getElementById('signup-err');
+
+    if (!nameVal || !emailVal || !passVal) {
+      errEl.style.display = 'block';
+      errEl.innerText = 'Please fill in all fields.';
+      return;
+    }
+    if (passVal.length < 6) {
+      errEl.style.display = 'block';
+      errEl.innerText = 'Password must be at least 6 characters.';
+      return;
+    }
+
+    errEl.style.display = 'none';
+    signUpBtn.disabled = true;
+    signUpBtn.innerText = 'Creating account...';
+
+    const { signUp } = await import('./js/auth.js');
+    const { data, error } = await signUp(emailVal, passVal, nameVal);
+
+    signUpBtn.disabled = false;
+    signUpBtn.innerText = 'Create Account';
+
+    if (error) {
+      errEl.style.display = 'block';
+      errEl.innerText = error.message || 'Sign up failed. Please try again.';
+      return;
+    }
+
+    // Supabase may require email confirmation — check if session is available
+    if (!data?.session) {
+      showToast('Check your email to confirm your account, then log in.', 'info', 8000);
+      // Switch to log in tab
+      document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+      document.querySelector('.auth-tab[data-tab="login"]').classList.add('active');
+      document.querySelectorAll('.auth-panel').forEach(p => p.classList.add('hidden'));
+      document.getElementById('auth-panel-login').classList.remove('hidden');
+      return;
+    }
+
+    // Immediate session — proceed to step 3
+    createInitials(nameVal);
+    const usernameEl = document.getElementById('username');
+    if (usernameEl) usernameEl.innerText = nameVal;
+    goToStep(3);
+  });
+}
+
+// ─── Log In ────────────────────────────────────────────────────────────────────
+const loginBtn = document.getElementById('login-btn');
+if (loginBtn) {
+  loginBtn.addEventListener('click', async () => {
+    const emailVal = document.getElementById('login-email-input').value.trim();
+    const passVal = document.getElementById('login-password-input').value;
+    const errEl = document.getElementById('login-err');
+
+    if (!emailVal || !passVal) {
+      errEl.style.display = 'block';
+      errEl.innerText = 'Please enter your email and password.';
+      return;
+    }
+
+    errEl.style.display = 'none';
+    loginBtn.disabled = true;
+    loginBtn.innerText = 'Logging in...';
+
+    const { signIn: supaSignIn } = await import('./js/auth.js');
+    const { data, error } = await supaSignIn(emailVal, passVal);
+
+    loginBtn.disabled = false;
+    loginBtn.innerText = 'Log In';
+
+    if (error) {
+      errEl.style.display = 'block';
+      errEl.innerText = error.message || 'Login failed. Check your credentials.';
+      return;
+    }
+
+    const displayName = data?.user?.user_metadata?.display_name || data?.user?.email || '';
+    createInitials(displayName);
+    const usernameEl = document.getElementById('username');
+    if (usernameEl) usernameEl.innerText = displayName;
+    applySectionUserStates(data.user);
+    goToStep(3);
+  });
+}
+
+const forgotBtn = document.getElementById('forgot-btn');
+if (forgotBtn) {
+  forgotBtn.addEventListener('click', async () => {
+    const emailVal = document.getElementById('forgotten-password-input').value.trim();
+    const errEl = document.getElementById('forgot-err');
+
+    if (!emailVal) {
+      errEl.style.display = 'block';
+      errEl.innerText = 'Please enter your email.';
+      return;
+    }
+
+    errEl.style.display = 'none';
+    forgotBtn.disabled = true;
+    forgotBtn.innerText = 'Sending...';
+
+    const { resetPasswordForEmail } = await import('./js/auth.js');
+    const { error } = await resetPasswordForEmail(emailVal);
+
+    forgotBtn.disabled = false;
+    forgotBtn.innerText = 'Send Mail';
+
+    if (error) {
+      errEl.style.display = 'block';
+      errEl.innerText = error.message || 'Failed to send password reset email.';
+      return;
+    }
+
+    showToast('Password reset email sent. Check your inbox.', 'info', 8000);
+    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+    document.querySelector('.auth-tab[data-tab="login"]').classList.add('active');
+    document.querySelectorAll('.auth-panel').forEach(p => p.classList.add('hidden'));
+    document.getElementById('auth-panel-login').classList.remove('hidden');
+  });
+}
+
+const dashboardBtn = document.getElementById('dashboard-link')
+dashboardBtn.addEventListener("click", async () => {
+  const { error: anonError } = await signInAnonymously();
+  if (anonError) {
+    console.warn('[auth] Anonymous sign-in failed; continuing guest transition.', anonError);
+  }
+  localStorage.setItem('auralis-guest', 'true');
+  applySectionUserStates(null);
+  document.documentElement.classList.add('transitioning');
+  setTimeout(() => {
+    document.documentElement.classList.add('onboarded');
+    setTimeout(() => {
+      document.documentElement.classList.remove('transitioning');
+    }, 500);
+  }, 400);
+});
+
 
 function restoreAudioFromIndexedDBForPlayer() {
   return getAudioBlob().then((savedBlob) => {
@@ -262,6 +482,31 @@ function buildSessionSnapshot(baseSession, utterances = []) {
   };
 }
 
+export function classifySectionUserState(supabaseUser, guestFlag) {
+  const isGuest = supabaseUser?.is_anonymous === true || guestFlag === 'true';
+  const isRegistered = Boolean(supabaseUser) && !isGuest;
+
+  if (isGuest) return 'guest';
+  if (isRegistered) return 'user';
+  return null;
+}
+
+function applySectionUserStates(supabaseUser) {
+  const recordingsEl = document.getElementById('recordings');
+  const analyticsEl = document.getElementById('analytics');
+  const sectionUserState = classifySectionUserState(
+    supabaseUser,
+    localStorage.getItem('auralis-guest')
+  );
+  if (sectionUserState === 'guest') {
+    updateState(recordingsEl, 'guest');
+    updateState(analyticsEl, 'guest');
+  } else if (sectionUserState === 'user') {
+    updateState(recordingsEl, 'user');
+    updateState(analyticsEl, 'user');
+  }
+}
+
 // Restore transcripts, etc on load
 document.addEventListener('DOMContentLoaded', async () => {
 
@@ -271,15 +516,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     const displayName = supabaseUser.user_metadata?.display_name || supabaseUser.email || '';
     createInitials(displayName);
     const usernameEl = document.getElementById('username');
-    if (usernameEl) usernameEl.innerText = displayName;
+    if (usernameEl && displayName.trim()) usernameEl.innerText = displayName.trim();
     console.log('User restored from Supabase session:', displayName);
   }
+
+  applySectionUserStates(supabaseUser);
+
+  document.querySelectorAll('.guest-sign-in').forEach((button) => {
+    button.addEventListener('click', () => {
+      document.documentElement.classList.remove('onboarded');
+      goToStep(4);
+
+      document.querySelectorAll('.auth-tab').forEach((t) => t.classList.remove('active'));
+      document.querySelector('.auth-tab[data-tab="login"]')?.classList.add('active');
+      document.querySelectorAll('.auth-panel').forEach((p) => p.classList.add('hidden'));
+      document.getElementById('auth-panel-login')?.classList.remove('hidden');
+    });
+  });
+
+  document.querySelectorAll('.guest-login').forEach((button) => {
+    button.addEventListener('click', () => {
+      document.documentElement.classList.remove('onboarded');
+      goToStep(4);
+    });
+  });
 
   // Sign-out button handler
   const signOutBtn = document.getElementById('sign-out-btn');
   if (signOutBtn) {
     signOutBtn.addEventListener('click', async () => {
       await signOut();
+      localStorage.removeItem('auralis-guest');
       document.documentElement.classList.remove('onboarded');
       location.reload();
     });
@@ -419,7 +686,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Function to set UI states
 function updateState(element, state) {
-  const states = ['empty', 'loading', 'loaded'];
+  const states = ['empty', 'loading', 'loaded', 'guest', 'user'];
   element.classList.remove(...states)
   element.classList.add(state)
 }
@@ -1286,9 +1553,7 @@ async function runAttempt(uploadType, uploadData) {
     const authSession = await getSession();
     const authToken = authSession?.access_token ?? null;
     if (!authToken) {
-      showToast('You must be logged in to transcribe audio.', 'error');
-      keepLockedForPolling = false;
-      return;
+      console.warn('[transcribe] No auth token — request will be sent without Authorization header.');
     }
 
     await startPolling(clientJobId, { uploadType, uploadData, fileDuration, startedAt, authToken });
@@ -1560,6 +1825,8 @@ exportBTN.addEventListener('click', async () => {
   }
 
   await downloadFile(editableTranscript, session.title || 'transcript', downloadType);
+
+  showToast('File Download started', 'success')
 });
 
 // Cancel Modal logic 
@@ -1651,198 +1918,7 @@ const transcriptTitleEl = document.querySelector('.transcript-title');
 if (transcriptTitleEl) attachTitleEdit(transcriptTitleEl);
 
 
-
-
-// Onboarding Setup
-let username;
-
-const progressBar = document.querySelector('.progress-bars');
-const sliderTrack = document.querySelector('.slider-track');
-
-function goToStep(step) {
-  const storageKey = 'auralis-onboarding';
-  let onboarding = null;
-
-  try {
-    onboarding = JSON.parse(localStorage.getItem(storageKey));
-  } catch (e) {
-    console.warn('auralis-onboarding is invalid JSON, resetting.', e);
-  }
-
-  // If nothing valid is found, create a default object
-  if (!onboarding || typeof onboarding !== 'object') {
-    onboarding = {
-      isCompleted: false,
-      currentStep: 1,
-      time: new Date().toISOString()
-    };
-  }
-
-  // update onboarding current step
-  onboarding.currentStep = step;
-
-  // Save the new step permanently
-  localStorage.setItem(storageKey, JSON.stringify(onboarding));
-
-  console.log('onboarding:', onboarding);
-
-  // Update elements for sliding effects (guard in case DOM nodes are missing)
-  if (progressBar) progressBar.dataset.step = onboarding.currentStep;
-  if (sliderTrack) sliderTrack.dataset.step = onboarding.currentStep;
-}
-
-
-// expose goToStep function globally so the HTML buttons can access it
-window.goToStep = goToStep
-
-// Get the data we saved from index file to restore current step
-// (savedState is now managed by Supabase auth — kept for goToStep step restoration only)
-const savedState = JSON.parse(localStorage.getItem('auralis-onboarding'));
-
-// If a non-completed onboarding step is found, restore it (step tracking only)
-if (savedState && !savedState.isCompleted) {
-  // This calls your function immediately when the script loads
-  goToStep(savedState.currentStep);
-}
-
-// ─── Auth Tab Switching ────────────────────────────────────────────────
-console.log('[auth] Setting up tab switching');
-const authTabs = document.querySelectorAll('.auth-tab');
-authTabs.forEach(tab => {
-  tab.addEventListener('click', () => {
-    authTabs.forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    const target = tab.dataset.tab; // 'signup' or 'login'
-    document.querySelectorAll('.auth-panel').forEach(panel => panel.classList.add('hidden'));
-    document.getElementById(`auth-panel-${target}`).classList.remove('hidden');
-  });
-});
-
-// ─── Sign Up ─────────────────────────────────────────────────────────────────
-const signUpBtn = document.getElementById('signup-btn');
-if (signUpBtn) {
-  signUpBtn.addEventListener('click', async () => {
-    const nameVal = document.getElementById('signup-name-input').value.trim();
-    const emailVal = document.getElementById('signup-email-input').value.trim();
-    const passVal = document.getElementById('signup-password-input').value;
-    const errEl = document.getElementById('signup-err');
-
-    if (!nameVal || !emailVal || !passVal) {
-      errEl.style.display = 'block';
-      errEl.innerText = 'Please fill in all fields.';
-      return;
-    }
-    if (passVal.length < 6) {
-      errEl.style.display = 'block';
-      errEl.innerText = 'Password must be at least 6 characters.';
-      return;
-    }
-
-    errEl.style.display = 'none';
-    signUpBtn.disabled = true;
-    signUpBtn.innerText = 'Creating account...';
-
-    const { signUp } = await import('./js/auth.js');
-    const { data, error } = await signUp(emailVal, passVal, nameVal);
-
-    signUpBtn.disabled = false;
-    signUpBtn.innerText = 'Create Account';
-
-    if (error) {
-      errEl.style.display = 'block';
-      errEl.innerText = error.message || 'Sign up failed. Please try again.';
-      return;
-    }
-
-    // Supabase may require email confirmation — check if session is available
-    if (!data?.session) {
-      showToast('Check your email to confirm your account, then log in.', 'info', 8000);
-      // Switch to log in tab
-      document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-      document.querySelector('.auth-tab[data-tab="login"]').classList.add('active');
-      document.querySelectorAll('.auth-panel').forEach(p => p.classList.add('hidden'));
-      document.getElementById('auth-panel-login').classList.remove('hidden');
-      return;
-    }
-
-    // Immediate session — proceed to step 3
-    createInitials(nameVal);
-    const usernameEl = document.getElementById('username');
-    if (usernameEl) usernameEl.innerText = nameVal;
-    goToStep(3);
-  });
-}
-
-// ─── Log In ────────────────────────────────────────────────────────────────────
-const loginBtn = document.getElementById('login-btn');
-if (loginBtn) {
-  loginBtn.addEventListener('click', async () => {
-    const emailVal = document.getElementById('login-email-input').value.trim();
-    const passVal = document.getElementById('login-password-input').value;
-    const errEl = document.getElementById('login-err');
-
-    if (!emailVal || !passVal) {
-      errEl.style.display = 'block';
-      errEl.innerText = 'Please enter your email and password.';
-      return;
-    }
-
-    errEl.style.display = 'none';
-    loginBtn.disabled = true;
-    loginBtn.innerText = 'Logging in...';
-
-    const { signIn: supaSignIn } = await import('./js/auth.js');
-    const { data, error } = await supaSignIn(emailVal, passVal);
-
-    loginBtn.disabled = false;
-    loginBtn.innerText = 'Log In';
-
-    if (error) {
-      errEl.style.display = 'block';
-      errEl.innerText = error.message || 'Login failed. Check your credentials.';
-      return;
-    }
-
-    const displayName = data?.user?.user_metadata?.display_name || data?.user?.email || '';
-    createInitials(displayName);
-    const usernameEl = document.getElementById('username');
-    if (usernameEl) usernameEl.innerText = displayName;
-    goToStep(3);
-  });
-}
-
-const dashboardBtn = document.getElementById('dashboard-link')
-dashboardBtn.addEventListener("click", () => {
-  // Add transitioning class for smoother animation
-  document.documentElement.classList.add('transitioning');
-
-  // Small delay to let the fade-out animation play
-  setTimeout(() => {
-    
-    // Add onboarded class to document Element to manually remove onboarding and replace with dashboard
-    document.documentElement.classList.add('onboarded');
-
-    // Remove transitioning class after animation completes
-    setTimeout(() => {
-      document.documentElement.classList.remove('transitioning');
-    }, 500);
-  }, 400); // Small delay for smoothness
-})
-
-const onboardingUploadAudioBtn = document.getElementById('onboarding-upload-audio-btn')
-onboardingUploadAudioBtn.addEventListener('click', () => {
-  dashboardBtn.click();
-  setTimeout(() => {
-    label.click();
-  }, 450);
-})
-
-
-
 // Handle active class toggles
-
-
-
 // Nav links
 const navLinks = document.querySelectorAll('.nav-link')
 // Callback function to handle section switching
@@ -1901,10 +1977,11 @@ uploadBtnSecondary.addEventListener('click', () => {
 
 
 // Empty State - Navigate to Transcription section when footer is clicked
-const emptyFooter = document.querySelector('.empty-footer');
-
+const emptyFooter = document.querySelectorAll('.empty-footer');
+// console.log(emptyFooter)
 if (emptyFooter) {
-  emptyFooter.addEventListener('click', () => {
+  emptyFooter.forEach(footer => {
+  footer.addEventListener('click', () => {
     // Find the Transcription nav link
     const transcriptionNavLink = document.querySelector('[data-id="transcription"]');
 
@@ -1915,6 +1992,7 @@ if (emptyFooter) {
       // console.log('Navigated to Transcription section from empty state');
     }
   });
+  })
 }
 
 
