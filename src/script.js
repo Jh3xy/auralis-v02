@@ -210,8 +210,7 @@ if (loginBtn) {
     createInitials(displayName);
     const usernameEl = document.getElementById('username');
     if (usernameEl) usernameEl.innerText = displayName;
-    applySectionUserStates(data.user);
-    goToStep(3);
+    enterDashboardAsRegisteredUser(data.user);
   });
 }
 
@@ -252,13 +251,8 @@ if (forgotBtn) {
 }
 
 const dashboardBtn = document.getElementById('dashboard-link')
-dashboardBtn.addEventListener("click", async () => {
-  const { error: anonError } = await signInAnonymously();
-  if (anonError) {
-    console.warn('[auth] Anonymous sign-in failed; continuing guest transition.', anonError);
-  }
-  localStorage.setItem('auralis-guest', 'true');
-  applySectionUserStates(null);
+
+function transitionToDashboard() {
   document.documentElement.classList.add('transitioning');
   setTimeout(() => {
     document.documentElement.classList.add('onboarded');
@@ -266,7 +260,35 @@ dashboardBtn.addEventListener("click", async () => {
       document.documentElement.classList.remove('transitioning');
     }, 500);
   }, 400);
-});
+}
+
+if (dashboardBtn) {
+  dashboardBtn.addEventListener("click", async () => {
+    const supabaseUser = await getUser();
+    const isRegisteredSession = Boolean(supabaseUser) && supabaseUser.is_anonymous !== true;
+
+    if (isRegisteredSession) {
+      localStorage.removeItem('auralis-guest');
+      applySectionUserStates(supabaseUser);
+      transitionToDashboard();
+      return;
+    }
+
+    const { error: anonError } = await signInAnonymously();
+    if (anonError) {
+      console.warn('[auth] Anonymous sign-in failed; continuing guest transition.', anonError);
+    }
+    localStorage.setItem('auralis-guest', 'true');
+    applySectionUserStates(null);
+    transitionToDashboard();
+  });
+}
+
+function enterDashboardAsRegisteredUser(supabaseUser) {
+  localStorage.removeItem('auralis-guest');
+  applySectionUserStates(supabaseUser);
+  transitionToDashboard();
+}
 
 
 function restoreAudioFromIndexedDBForPlayer() {
@@ -2068,4 +2090,3 @@ urlButton.addEventListener("click", () => {
   toggleClass(dock, 'show-url-box')
   toggleClass(btn, 'url-toggle')
 })
-
