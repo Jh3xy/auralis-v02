@@ -210,6 +210,7 @@ if (loginBtn) {
     createInitials(displayName);
     const usernameEl = document.getElementById('username');
     if (usernameEl) usernameEl.innerText = displayName;
+    applySectionUserStates(data.user);
     goToStep(3);
   });
 }
@@ -257,6 +258,7 @@ dashboardBtn.addEventListener("click", async () => {
     console.warn('[auth] Anonymous sign-in failed; continuing guest transition.', anonError);
   }
   localStorage.setItem('auralis-guest', 'true');
+  applySectionUserStates(null);
   document.documentElement.classList.add('transitioning');
   setTimeout(() => {
     document.documentElement.classList.add('onboarded');
@@ -480,6 +482,31 @@ function buildSessionSnapshot(baseSession, utterances = []) {
   };
 }
 
+export function classifySectionUserState(supabaseUser, guestFlag) {
+  const isGuest = supabaseUser?.is_anonymous === true || guestFlag === 'true';
+  const isRegistered = Boolean(supabaseUser) && !isGuest;
+
+  if (isGuest) return 'guest';
+  if (isRegistered) return 'user';
+  return null;
+}
+
+function applySectionUserStates(supabaseUser) {
+  const recordingsEl = document.getElementById('recordings');
+  const analyticsEl = document.getElementById('analytics');
+  const sectionUserState = classifySectionUserState(
+    supabaseUser,
+    localStorage.getItem('auralis-guest')
+  );
+  if (sectionUserState === 'guest') {
+    updateState(recordingsEl, 'guest');
+    updateState(analyticsEl, 'guest');
+  } else if (sectionUserState === 'user') {
+    updateState(recordingsEl, 'user');
+    updateState(analyticsEl, 'user');
+  }
+}
+
 // Restore transcripts, etc on load
 document.addEventListener('DOMContentLoaded', async () => {
 
@@ -492,6 +519,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (usernameEl && displayName.trim()) usernameEl.innerText = displayName.trim();
     console.log('User restored from Supabase session:', displayName);
   }
+
+  applySectionUserStates(supabaseUser);
+
+  document.querySelectorAll('.guest-sign-in').forEach((button) => {
+    button.addEventListener('click', () => {
+      document.documentElement.classList.remove('onboarded');
+      goToStep(4);
+
+      document.querySelectorAll('.auth-tab').forEach((t) => t.classList.remove('active'));
+      document.querySelector('.auth-tab[data-tab="login"]')?.classList.add('active');
+      document.querySelectorAll('.auth-panel').forEach((p) => p.classList.add('hidden'));
+      document.getElementById('auth-panel-login')?.classList.remove('hidden');
+    });
+  });
+
+  document.querySelectorAll('.guest-login').forEach((button) => {
+    button.addEventListener('click', () => {
+      document.documentElement.classList.remove('onboarded');
+      goToStep(4);
+    });
+  });
 
   // Sign-out button handler
   const signOutBtn = document.getElementById('sign-out-btn');
